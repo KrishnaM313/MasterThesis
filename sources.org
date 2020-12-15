@@ -1,0 +1,10 @@
+# Data Sources
+* EU Open Data Portal
+** Swagger Definition
+   https://app.swaggerhub.com/apis/EU-Open-Data-Portal/eu-open_data_portal/0.8.0
+** Portal Website
+   https://data.europa.eu/euodp/de/developerscorner
+** Example Debate website with xml data basis
+   https://www.europarl.europa.eu/doceo/document/CRE-9-2020-11-26_EN.html#creitem1
+* Speeches by European Leaders
+  https://osf.io/4yjpm/
