@@ -3,30 +3,31 @@ import re
 import urllib.request
 import os
 import time
-
+import textract
+import numpy as np
+from datetime import datetime
+from joblib import Parallel, delayed
 
 downloadBaseFolder = "/home/user/workspaces/MasterThesis/data" 
 
 
-url1 = 'https://data.europa.eu/euodp/data/apiodp/action/package_show'
-data1 = '''{
-  "id": "european-parliament-finalised-minutes-in-xml-2017"
-}'''
-response1 = requests.post(url1, data=data1,headers={"Content-Type": "application/json"})
-print(response1)
-package=response1.json()
-datasets=package["result"]["dataset"]["distribution_dcat"]
-print(len(datasets))
-print(type(datasets))
+#url1 = 'https://data.europa.eu/euodp/data/apiodp/action/package_show'
+#data1 = '''{
+#  "id": "european-parliament-finalised-minutes-in-xml-2017"
+#}'''
+#response1 = requests.post(url1, data=data1,headers={"Content-Type": "application/json"})
+#print(response1)
+#package=response1.json()
+#datasets=package["result"]["dataset"]["distribution_dcat"]
 
 url2 = "https://www.europarl.europa.eu/RegistreWeb/services/search"
 data2 = '''{
     "references": [],
     "authors": [],
-    "typesDoc": ["PPVD"],
+    "typesDoc": ["PCRE"],
     "eurovoc": null,
     "codeAuthor": null,
-    "fulltext": "Plenary Sitting",
+    "fulltext": null,
     "searchLanguages": ["EN"],
     "relations": [],
     "allAuthorities": [],
@@ -42,50 +43,216 @@ data2 = '''{
     "sortAndOrder": null
   }'''
 
-for dataset in datasets:
-  title = dataset["title_dcterms"][0]["value_or_uri"]
-  language = dataset["title_dcterms"][0]["lang"]
-  print(title + " - " + language) 
-  search = re.search("[\d]{4}", title)
-  year = search.group()
-  response2 = requests.post(url2, data=(data2 % (year)),headers={"Content-Type": "application/json"})
+years = np.arange(2003, datetime.now().year, 1).tolist()
+print("Download years: {}".format(years))
+
+#for year in years:
+#   print("Year {}".format(year),end=' ')
+# #for dataset in datasets:
+#   # title = dataset["title_dcterms"][0]["value_or_uri"]
+#   # language = dataset["title_dcterms"][0]["lang"]
+#   # print(title + " - " + language) 
+#   # search = re.search("[\d]{4}", title)
+#   # year = search.group()
+#   response2 = requests.post(url2, data=(data2 % (str(year))),headers={"Content-Type": "application/json"})
+#   print(response2)
+#   documents=response2.json()["documents"]
+
+#   for document in documents:
+#     subfiles = document["formatDocs"]
+
+#     folderPath = os.path.join(downloadBaseFolder, "odt" , str(year))
+#     txtFolderPath = os.path.join(downloadBaseFolder, "txt" , str(year))
+#     pdfFolderPath = os.path.join(downloadBaseFolder, "pdf" , str(year))
+
+#     # Check if folder exists or create it
+#     if not os.path.exists(folderPath):
+#       os.makedirs(folderPath)
+#     if not os.path.exists(txtFolderPath):
+#       os.makedirs(txtFolderPath)
+#     if not os.path.exists(pdfFolderPath):
+#       os.makedirs(pdfFolderPath)
+
+#     search2 = re.search(r"([\d]{2}-[\d]{2})", document["reference"])
+#     monthDay = search2.group()
+
+#     print("{}-{}: {}".format(str(year),monthDay,document["reference"]), end='')
+
+#     filetypes = []
+#     for subfile in subfiles:
+#       filetypes.append(subfile["typeDoc"])
+
+#     for subfile in subfiles:
+#       fileUrl = subfile["url"]
+#       # if subfile["typeDoc"] == "application/vnd.oasis.opendocument.text":
+
+#       #   filePath = os.path.join(folderPath, monthDay + ".odt")
+#       #   # Check if file already exists
+#       #   if os.path.isfile(filePath):
+#       #     print (", odt exists", end='')
+#       #   else:
+#       #     print (", downloading odt", end='')
+#       #     remaining_download_tries = 15
+#       #     while remaining_download_tries > 0 :
+#       #       try:
+#       #         urllib.request.urlretrieve(fileUrl, filePath)
+#       #         time.sleep(0.1)
+#       #       except:
+#       #         print(", error downloading odt " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+#       #         remaining_download_tries = remaining_download_tries - 1
+#       #         continue
+#       #       else:
+#       #         break
+#       #     print (".", end='')
+#       #   text = textract.process(filePath)
+#       #   txtFilePath = os.path.join(txtFolderPath, monthDay + ".txt")
+#       #   if os.path.isfile(txtFilePath):
+#       #     print (", txt exists", end='')
+#       #   else:
+#       #     print (", txt decoding", end='')
+#       #     with open(txtFilePath, 'w') as f:
+#       #       f.write(text.decode())
+#       #     print (".", end='')
+        
+#       # el
+#       if subfile["typeDoc"] == "application/pdf":
+#       # and not ("application/vnd.oasis.opendocument.text" in filetypes):
+        
+#         filePath = os.path.join(pdfFolderPath, monthDay + ".pdf")
+#         # Check if file already exists
+#         if os.path.isfile(filePath):
+#           print (", pdf exists", end='')
+#         else:
+#           print (", downloading pdf", end='')
+#           remaining_download_tries = 15
+#           while remaining_download_tries > 0 :
+#             try:
+#               urllib.request.urlretrieve(fileUrl, filePath)
+#               time.sleep(0.1)
+#             except:
+#               print(", error downloading pdf " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+#               remaining_download_tries = remaining_download_tries - 1
+#               continue
+#             else:
+#               break
+#           print (".", end='')
+#         text = textract.process(filePath)
+#         txtFilePath = os.path.join(txtFolderPath, monthDay + ".txt")
+#         if os.path.isfile(txtFilePath):
+#           print (", txt exists", end='')
+#         else:
+#           print (", txt decoding", end='')
+#           with open(txtFilePath, 'w') as f:
+#             f.write(text.decode())
+#           print (".", end='')
+#       print(" ")
+
+
+
+def download(year):
+  print("Year {}".format(year),end=' ')
+  #for dataset in datasets:
+  # title = dataset["title_dcterms"][0]["value_or_uri"]
+  # language = dataset["title_dcterms"][0]["lang"]
+  # print(title + " - " + language) 
+  # search = re.search("[\d]{4}", title)
+  # year = search.group()
+  response2 = requests.post(url2, data=(data2 % (str(year))),headers={"Content-Type": "application/json"})
   print(response2)
   documents=response2.json()["documents"]
 
   for document in documents:
     subfiles = document["formatDocs"]
+
+    folderPath = os.path.join(downloadBaseFolder, "odt" , str(year))
+    txtFolderPath = os.path.join(downloadBaseFolder, "txt" , str(year))
+    pdfFolderPath = os.path.join(downloadBaseFolder, "pdf" , str(year))
+
+    # Check if folder exists or create it
+    if not os.path.exists(folderPath):
+      os.makedirs(folderPath)
+    if not os.path.exists(txtFolderPath):
+      os.makedirs(txtFolderPath)
+    if not os.path.exists(pdfFolderPath):
+      os.makedirs(pdfFolderPath)
+
+    search2 = re.search(r"([\d]{2}-[\d]{2})", document["reference"])
+    monthDay = search2.group()
+
+    print("{}-{}: {}".format(str(year),monthDay,document["reference"]), end='')
+
+    filetypes = []
     for subfile in subfiles:
-      if subfile["typeDoc"] == "text/xml":
-        search2 = re.search("([\d]{2}-[\d]{2})", document["reference"])
-        monthDay = search2.group()
+      filetypes.append(subfile["typeDoc"])
 
-        fileUrl = subfile["url"]
-        print("File {}: {}, ".format(year,document["reference"]), end='')
+    for subfile in subfiles:
+      fileUrl = subfile["url"]
+      # if subfile["typeDoc"] == "application/vnd.oasis.opendocument.text":
 
-        folderPath = os.path.join(downloadBaseFolder, year)
-
-        # Check if folder exists or create it
-        if not os.path.exists(folderPath):
-          os.makedirs(folderPath)
+      #   filePath = os.path.join(folderPath, monthDay + ".odt")
+      #   # Check if file already exists
+      #   if os.path.isfile(filePath):
+      #     print (", odt exists", end='')
+      #   else:
+      #     print (", downloading odt", end='')
+      #     remaining_download_tries = 15
+      #     while remaining_download_tries > 0 :
+      #       try:
+      #         urllib.request.urlretrieve(fileUrl, filePath)
+      #         time.sleep(0.1)
+      #       except:
+      #         print(", error downloading odt " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+      #         remaining_download_tries = remaining_download_tries - 1
+      #         continue
+      #       else:
+      #         break
+      #     print (".", end='')
+      #   text = textract.process(filePath)
+      #   txtFilePath = os.path.join(txtFolderPath, monthDay + ".txt")
+      #   if os.path.isfile(txtFilePath):
+      #     print (", txt exists", end='')
+      #   else:
+      #     print (", txt decoding", end='')
+      #     with open(txtFilePath, 'w') as f:
+      #       f.write(text.decode())
+      #     print (".", end='')
         
-        filePath = os.path.join(folderPath, monthDay + ".xml")
-
+      # el
+      if subfile["typeDoc"] == "application/pdf":
+      # and not ("application/vnd.oasis.opendocument.text" in filetypes):
+        
+        filePath = os.path.join(pdfFolderPath, monthDay + ".pdf")
         # Check if file already exists
         if os.path.isfile(filePath):
-          print ("File exists")
+          print (", pdf exists", end='')
         else:
-          print ("Downloading")
+          print (", downloading pdf", end='')
           remaining_download_tries = 15
           while remaining_download_tries > 0 :
             try:
               urllib.request.urlretrieve(fileUrl, filePath)
               time.sleep(0.1)
             except:
-              print("error downloading " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+              print(", error downloading pdf " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
               remaining_download_tries = remaining_download_tries - 1
               continue
             else:
               break
+          print (".", end='')
+        text = textract.process(filePath)
+        txtFilePath = os.path.join(txtFolderPath, monthDay + ".txt")
+        if os.path.isfile(txtFilePath):
+          print (", txt exists", end='')
+        else:
+          print (", txt decoding", end='')
+          with open(txtFilePath, 'w') as f:
+            f.write(text.decode())
+          print (".", end='')
+      print(" ")
+
+
+results = Parallel(n_jobs=-1, verbose=50)(
+             map(delayed(download), years))
           
 
   
