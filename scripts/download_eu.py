@@ -22,8 +22,7 @@ downloadBaseFolder = "/home/user/workspaces/MasterThesis/data"
 #package=response1.json()
 #datasets=package["result"]["dataset"]["distribution_dcat"]
 
-
-def downloadDocument(document):
+def downloadDocument(document, downloadBaseFolder, downloadedFiles):
   subfiles = document["formatDocs"]
 
   # folderPath = os.path.join(downloadBaseFolder, "odt" , str(year))
@@ -38,82 +37,98 @@ def downloadDocument(document):
   search2 = re.search(r"([\d]{2}-[\d]{2})", document["reference"])
   monthDay = search2.group()
 
-  print("{}-{}: {}".format(str(year),monthDay,document["reference"]), end='')
+  print("{}-{}: {}".format(str(year),monthDay,document["reference"]))
 
-  filetypes = []
+  #filetypes = []
+  #for subfile in subfiles:
+    
+    
+  #  if (subfile["typeDoc"] == "text/xml"):
+  #    filetypes.append(subfile["typeDoc"])
+      #print(subfile["typeDoc"])
+  #print(filetypes)
+  
   for subfile in subfiles:
-    filetypes.append(subfile["typeDoc"])
+    if (subfile["typeDoc"] == "text/xml"):
+      #break
+      fileUrl = subfile["url"]
+      #print(fileUrl)
+      
+      #print(downloadedFiles)
+      
+      #if subfile["typeDoc"] == "text/xml":
+      extension = ".xml"
+      fileName = monthDay + extension
+      print("{}-{}".format(str(year),monthDay))
+      filePath = os.path.join(originalDir, fileName)
+      
+      if fileName not in downloadedFiles:
+        downlodFile(fileUrl,filePath)
 
-  for subfile in subfiles:
-    fileUrl = subfile["url"]
-    # if subfile["typeDoc"] == "application/vnd.oasis.opendocument.text":
+      
+      # txtFilePath = os.path.join(txtDir, monthDay + ".txt")
+      # if os.path.isfile(txtFilePath):
+      #   print (", txt exists")
+      # else:
+      #   print (", txt decoding")
+      #   #with open(txtFilePath, 'w') as f:
+      #   #  f.write(text.decode())
+      # break
 
-    #   filePath = os.path.join(folderPath, monthDay + ".odt")
+
+    # else if subfile["typeDoc"] == "application/pdf" or subfile["typeDoc"] == "application/msword":
+    # # and not ("application/vnd.oasis.opendocument.text" in filetypes):
+    #   if subfile["typeDoc"] == "application/pdf":
+    #     extension = ".pdf"
+    #   else:
+    #     extension = ".doc"
+      
+    #   filePath = os.path.join(originalDir, monthDay + extension)
     #   # Check if file already exists
     #   if os.path.isfile(filePath):
-    #     print (", odt exists", end='')
+    #     print (", file exists", end='')
     #   else:
-    #     print (", downloading odt", end='')
+    #     print (", downloading file", end='')
     #     remaining_download_tries = 15
     #     while remaining_download_tries > 0 :
     #       try:
     #         urllib.request.urlretrieve(fileUrl, filePath)
     #         time.sleep(0.1)
     #       except:
-    #         print(", error downloading odt " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+    #         print(", error downloading pdf " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
     #         remaining_download_tries = remaining_download_tries - 1
     #         continue
     #       else:
     #         break
-    #     print (".", end='')
     #   text = textract.process(filePath)
+
     #   txtFilePath = os.path.join(txtDir, monthDay + ".txt")
     #   if os.path.isfile(txtFilePath):
-    #     print (", txt exists", end='')
+    #     print (", txt exists")
     #   else:
-    #     print (", txt decoding", end='')
+    #     print (", txt decoding")
     #     with open(txtFilePath, 'w') as f:
     #       f.write(text.decode())
-    #     print (".", end='')
-      
-    # el
-    if subfile["typeDoc"] == "application/pdf" or subfile["typeDoc"] == "application/msword":
-    # and not ("application/vnd.oasis.opendocument.text" in filetypes):
-      if subfile["typeDoc"] == "application/pdf":
-        extension = ".pdf"
-      else:
-        extension = ".doc"
-      
-      filePath = os.path.join(originalDir, monthDay + extension)
-      # Check if file already exists
-      if os.path.isfile(filePath):
-        print (", file exists", end='')
-      else:
-        print (", downloading file", end='')
-        remaining_download_tries = 15
-        while remaining_download_tries > 0 :
-          try:
-            urllib.request.urlretrieve(fileUrl, filePath)
-            time.sleep(0.1)
-          except:
-            print(", error downloading pdf " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
-            remaining_download_tries = remaining_download_tries - 1
-            continue
-          else:
-            break
-      text = textract.process(filePath)
+    #   break
 
-      txtFilePath = os.path.join(txtDir, monthDay + ".txt")
-      if os.path.isfile(txtFilePath):
-        print (", txt exists")
-      else:
-        print (", txt decoding")
-        with open(txtFilePath, 'w') as f:
-          f.write(text.decode())
-      break
           
+def downlodFile(fileUrl,filePath):
+  if os.path.isfile(filePath):
+    print ("file exists")
+  else:
+    print ("downloading file")
+    remaining_download_tries = 15
+    while remaining_download_tries > 0 :
+      try:
+        urllib.request.urlretrieve(fileUrl, filePath)
+        time.sleep(0.1)
+      except:
+        print("error downloading pdf " + document["reference"]   +" on trial no: " + str(16 - remaining_download_tries))
+        remaining_download_tries = remaining_download_tries - 1
+        continue
+      else:
+        break
 
-  
 
 
 
@@ -165,11 +180,16 @@ for year in years:
   if not os.path.exists(originalDir):
     os.makedirs(originalDir)
 
+  downloadedFiles = os.listdir(originalDir)
 
   #print(response2.json())
-  results = Parallel(n_jobs=-1, verbose=50)(
-    map(delayed(downloadDocument), documents)
-  )
+  for document in documents:
+    downloadDocument(document, downloadBaseFolder, downloadedFiles)
+
+
+  # results = Parallel(n_jobs=-1, verbose=50)(
+  #   map(delayed(downloadDocument), documents)
+  # )
 
 
 
