@@ -7,7 +7,11 @@ import json
 import uuid
 import requests
 import textwrap
-
+import googletrans
+import translate
+from data_tools import loadJSONListOrCreate, saveJSON
+import boto3
+import time
 
 baseDir = "/home/user/workspaces/MasterThesis/data" 
 
@@ -17,11 +21,15 @@ JSONDir = os.path.join(baseDir, "json")
 availableJSONFiles = os.listdir(JSONDir)
 
 
+progressTrackerFilepath = os.path.join(JSONDir,"progressTracker.json")
+progressTracker = loadJSONListOrCreate(progressTrackerFilepath)
+
 if not os.path.exists(JSONDir):
     os.makedirs(JSONDir)
 
 
 files = os.listdir(htmlDir)
+files.sort(reverse=True)
 
 
 key_var_name = 'TRANSLATOR_TEXT_SUBSCRIPTION_KEY'
@@ -35,7 +43,69 @@ if not endpoint_var_name in os.environ:
 endpoint = os.environ[endpoint_var_name]
 
 
-def translate(text,from_lang,to_lang):
+def translateText(text,from_lang,to_lang,provider):
+    if provider == "azure":
+        return translateAzure(text,from_lang,to_lang)
+    elif provider == "google":
+        return translateGoogle(text,from_lang,to_lang)
+    elif provider == "mymemory":
+        return translateMyMemory(text,from_lang,to_lang)
+    elif provider == "aws":
+        return translateAWS(text,from_lang,to_lang)
+
+def translateAWS(text,from_lang,to_lang):
+    translate = boto3.client(service_name='translate', region_name='us-east-1', use_ssl=True)
+
+    parts = textwrap.wrap(text, 2000, break_long_words=False)
+
+    translations = []
+
+    for part in parts:
+        result = translate.translate_text(Text=part, 
+            SourceLanguageCode=from_lang, TargetLanguageCode=to_lang)
+        #print(result)
+        #print(response)
+        translations.append(result.get('TranslatedText'))
+        time.sleep(0.1)
+        
+    #print(' '.join(translations))
+    return ' '.join(translations)
+
+
+
+
+def translateMyMemory(text,from_lang,to_lang):
+    envVariable = "MY_MEMORY_EMAIL"
+    if os.environ.get(envVariable) is not None:
+        translator = Translator(from_lang=from_lang,to_lang=to_lang,email=os.environ.get(envVariable))
+        return translator.translate(text)
+    else:
+        raise SystemExit("Please define environment variable for MyMemory translation provider: {envVariable}".format(envVariable=envVariable))
+
+
+def translateGoogle(text,from_lang,to_lang):
+    translator = googletrans.Translator()
+
+    
+
+    parts = textwrap.wrap(text, 2000, break_long_words=False)
+
+    translations = []
+
+    for part in parts:
+        translation = translator.translate(part, src=from_lang, dest=to_lang)
+        #print(translation)
+        #print(translation._response)
+        #print(result)
+        #print(response)
+        translations.append(translation.text)
+        #time.sleep(0.1)
+        
+    #print(' '.join(translations))
+    return ' '.join(translations)
+
+
+def translateAzure(text,from_lang,to_lang):
     
     # Add your location, also known as region. The default is global.
     # This is required if using a Cognitive Services resource.
@@ -70,6 +140,7 @@ def translate(text,from_lang,to_lang):
 
         request = requests.post(constructed_url, params=params, headers=headers, json=body)
         response = request.json()
+        print(response)
         translations.append(response[0]["translations"][0]["text"])
         
     #print(' '.join(translations))
@@ -85,11 +156,15 @@ def translate(text,from_lang,to_lang):
     #print(response)
     
 
+globalTranslationProvider = "google"
 
 
 for file in files:
     if not file.endswith(".html"):
         continue
+
+    #if file in progressTracker:
+    #    continue
 
     pFileName = re.compile(r'(\d{4})-(\d{2})-(\d{2})', flags=re.DOTALL)
     FilenameExtraction = pFileName.match(file)
@@ -103,10 +178,18 @@ for file in files:
     JSONFilename = "{year}-{month}-{day}.json".format(year=year,month=month,day=day)
     print(JSONFilename)
   
+    reuse = False
     if JSONFilename in availableJSONFiles:
-        
-        print("skipped because already translated")
-        continue
+        reuse = True
+        JSONfilePath = os.path.join(JSONDir,JSONFilename)
+        with open(JSONfilePath, "r") as jsonFile:
+            existingData = json.load(jsonFile) 
+        if len(existingData) == 0:
+            reuse = False
+    else:
+        existingData = ""
+        #print("skipped because already translated")
+        #continue
         #continue
 
     print(file)
@@ -141,15 +224,16 @@ for file in files:
 
     speechObjects = []
 
+    texts = 0
+    textstranslated = 0
 
     for match in speeches:
-        
 
         speech = data[match.start():match.end()]
         
         #print('String match "%s" at %d:%d' % (data[s:e], s, e))
         #print(count)
-        count += 1
+        
 
         #if count<110:
         #    continue
@@ -168,6 +252,7 @@ for file in files:
             name = name.strip()
             #print(name)
 
+
         MEPIdSearch = pMEPId.search(speech)
         if MEPIdSearch is None:
             MEPId = "n/a"
@@ -184,6 +269,57 @@ for file in files:
 
         # Remove line break command "\n" in text
         speechText = speechText.replace("\n", " ")
+
+        try:
+            language = detect(speechText)
+        except:
+            continue
+
+    
+        if (count+1) > len(existingData):
+            reuse = False
+
+        texts += 1
+        if reuse:
+            print("reuse existing JSON")
+            # JSON file already exists
+            if existingData[count]["text"] == "":
+                print("text is empty. translate again")
+                if language == "en":
+                    text = speechText
+                    translationProvider = "none"
+                else:
+                    textstranslated += 1
+                    text = translateText(speechText,language,"en", globalTranslationProvider)
+                    translationProvider = globalTranslationProvider
+            else:
+                print("translation already exists")
+                text = existingData[count]["text"]
+                if "translation_provider" not in existingData[count] or existingData[count]["translation_provider"] == "":
+                    translationProvider = "azure"
+                else:
+                    translationProvider = existingData[count]["translation_provider"]
+        else:
+            print("no translation for reuse found, translate again")
+            # no JSON file exists for this day
+            if language == "en":
+                text = speechText
+                translationProvider = "none"
+            else:        
+                #try:
+                text = translateText(speechText,language,"en", globalTranslationProvider)
+                #except:
+                #    print("An exception occurred while translating")
+                #    text = ""
+                translationProvider = globalTranslationProvider
+        #print(speechText)
+        #print(MEPId)
+        
+        #print(existingData[count]['name'])
+
+
+        #if count>5:
+        #    exit()
         
         #print(type(speechText))
         #print(speechText)
@@ -191,42 +327,47 @@ for file in files:
         #exit()
 
         #translator = Translator()
-        try:
-            language = detect(speechText)
-        except:
-            continue
+
 
         
 
-        if language == "en":
-            text = speechText
-        else:
-            #text = translator.translate(speechText, dest='en').text
-            #translator2 = Translator(provider='microsoft', to_lang=language, secret_access_key=os.environ.get('TRANSLATION_API_KEY'))
-            #print(translator.provider)
-            #text = translator.translate(speechText)
-            #print(text)            
-            #try:
-            text = translate(speechText,language,"en")
-            #except:
-            #    print("An exception occurred while translating")
-             #   text = ""
+        #exit()
             
-        print("#{count}: {mepid} - {language} - {name}".format(count=count,mepid=MEPId,language=language,name=name))
+        print("{year}-{month}-{day} #{count}: {mepid} - {language} - {name}".format(year=year,month=month,day=day,count=count,mepid=MEPId,language=language,name=name))
         
         speechObject = {
+            "id" : count,
+            "date" : "{year}-{month}-{day}.json".format(year=year,month=month,day=day),
             "name" : name,
             "mepid" : MEPId,
             "text" : text,
-            "language" : "en"
+            "language" : "en",
+            "original_language" : language,
+            "translation_provider" : translationProvider
         }
         #print(speechObject)
-        #exit()
+
         speechObjects.append(speechObject)
+
+        if count % 50 == 0:
+            JSONFilepath = os.path.join(JSONDir, JSONFilename)
+            print("Write JSON file to {filepath}".format(filepath=JSONFilepath))
+            with open(JSONFilepath, 'w') as outfile:
+                dataEncoded = json.dumps(speechObjects, ensure_ascii=False)
+                outfile.write(str(dataEncoded))
+
+        #exit()
+        #print(speechObject)
+        #exit()
+        
         # if count == 5:
         #     break
+        count += 1
 
+    #progressTracker.append(file)
     
+    #saveJSON(texts,progressTrackerFilepath)
+
     JSONFilepath = os.path.join(JSONDir, JSONFilename)
     print("Write JSON file to {filepath}".format(filepath=JSONFilepath))
     with open(JSONFilepath, 'w') as outfile:
@@ -234,7 +375,7 @@ for file in files:
         outfile.write(str(dataEncoded))
     print(count)
 
-
+    
     
 
     #print(speeches.next())
@@ -245,5 +386,5 @@ for file in files:
     #     print('Match found: ', m.group())
     # else:
     #     print('No match')
-    exit()
+    
 

@@ -7,6 +7,9 @@ import textract
 import numpy as np
 import datetime
 from joblib import Parallel, delayed
+from urllib.error import HTTPError
+from data_tools import downlodFile
+
 
 downloadBaseFolder = "/home/user/workspaces/MasterThesis/data" 
 
@@ -109,37 +112,12 @@ def downloadDocument(document, downloadBaseFolder, downloadedFiles):
     #     print (", txt decoding")
     #     with open(txtFilePath, 'w') as f:
     #       f.write(text.decode())
-    #   break
+    #   breakf
 
 
-from urllib.error import HTTPError
+
           
-def downlodFile(fileUrl,filePath):
-  if os.path.isfile(filePath):
-    print ("file exists")
-    return 2
-  else:
-    print ("downloading file")
-    remaining_download_tries = 2
-    while remaining_download_tries > 0 :
-      try:
-        urllib.request.urlretrieve(fileUrl, filePath)
-        time.sleep(0.1)
-      except HTTPError as err:
-        if err.code == 404:
-          print("Not available")
-          return 1
-        else:
-          print("error downloading pdf on trial no: " + str(2 - remaining_download_tries))
-          remaining_download_tries = remaining_download_tries - 1
-          continue
-      except:
-        print("error downloading pdf on trial no: " + str(2 - remaining_download_tries))
-        remaining_download_tries = remaining_download_tries - 1
-        continue
-      else:
-        break
-  return 0
+
 
 
 
@@ -213,7 +191,7 @@ for term in terms:
       notAvailableDocuments = pickle.load(fp)
   else:
     notAvailableDocuments = []
-
+ 
   
 
   
@@ -227,6 +205,8 @@ for term in terms:
     localFilename = "%s-%02d-%02d.html" % (date.year, date.month, date.day)
     localPath = os.path.join(downloadDir,localFilename)
 
+  
+
     if localFilename not in notAvailableDocuments:
       try:
         downloadedFiles = os.listdir(downloadDir)
@@ -236,12 +216,14 @@ for term in terms:
       result = downlodFile(fileUrl,localPath)
       if(result == 1):
         notAvailableDocuments.append(localFilename)
+    else:
+      print("skipped {filename}".format(filename=localFilename))
       
   
 
-  with open(xmlDownloadState, "wb") as fp:   #Pickling
-    pickle.dump(notAvailableDocuments, fp)
-  exit()
+    with open(xmlDownloadState, "wb") as fp:   #Pickling
+      pickle.dump(notAvailableDocuments, fp)
+
 
 
     #print(date)
@@ -270,12 +252,13 @@ for year in years:
   if not os.path.exists(txtDir):
     os.makedirs(txtDir)
 
-  originalDir = os.path.join(downloadBaseFolder, "original" , str(year))
+  originalDir = os.path.join(downloadBaseFolder, "html" , str(year))
   if not os.path.exists(originalDir):
     os.makedirs(originalDir)
 
   downloadedFiles = os.listdir(originalDir)
-
+  print(downloadedFiles)
+  exit()
   #print(response2.json())
   for document in documents:
     downloadDocument(document, downloadBaseFolder, downloadedFiles)
