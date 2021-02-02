@@ -8,7 +8,7 @@ import numpy as np
 import datetime
 from joblib import Parallel, delayed
 from urllib.error import HTTPError
-from data_tools import downlodFile
+from tools_data import downlodFile
 
 
 downloadBaseFolder = "/home/user/workspaces/MasterThesis/data" 

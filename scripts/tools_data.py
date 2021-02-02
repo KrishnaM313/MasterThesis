@@ -39,22 +39,27 @@ def saveJSON(data, filepath):
         dataEncoded = json.dumps(data, ensure_ascii=False)
         outfile.write(dataEncoded)
 
-def loadJSON(filepath):
+def loadJSON(filepath, create=None):
     print("Read JSON file from {filepath}".format(filepath=filepath))
-    with open(filepath, "r") as jsonFile:
+    if os.path.exists(filepath):
+      with open(filepath, "r") as jsonFile:
         return json.load(jsonFile)
-
-def loadJSONDictionaryOrCreate(filepath):
-    if os.path.exists(filepath):
-        return loadJSON(filepath)
     else:
-        return {}
-
-def loadJSONListOrCreate(filepath):
-    if os.path.exists(filepath):
-        return loadJSON(filepath)
-    else:
+      if create == "list":
         return []
+      elif create == "dictionary":
+        return {}
+      elif create is not None:
+        raise Exception("creation type \""+create+"\" in loadJSON is not valid") 
+
+
+def loadFile(filepath):
+  if os.path.exists(filepath):
+    with open(filepath, "r") as fileObject:
+      data = fileObject.read()
+    return data
+  else:
+    raise Exception("File {filepath} does not exist".format(filepath=filepath)) 
 
 def download(type,filepath,fileurl,header=1):
     if os.path.isfile(filepath):
