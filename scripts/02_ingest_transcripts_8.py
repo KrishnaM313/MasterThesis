@@ -13,10 +13,6 @@ JSONDir = os.path.join(baseDir, "json")
 
 availableJSONFiles = os.listdir(JSONDir)
 
-
-#progressTrackerFilepath = os.path.join(JSONDir,"progressTracker.json")
-#progressTracker = loadJSON(progressTrackerFilepath,create="list")
-
 if not os.path.exists(JSONDir):
     os.makedirs(JSONDir)
 
@@ -24,7 +20,7 @@ files = os.listdir(htmlDir)
 files.sort(reverse=True)
 
 
-globalTranslationProvider = "google"
+globalTranslationProvider = "azure"
 
 
 for file in files:
@@ -128,7 +124,7 @@ for file in files:
 
         texts += 1
         if reuse:
-            print("reuse existing JSON")
+            #print("reuse existing JSON")
             # JSON file already exists
             if existingData[count]["text"] == "":
                 print("text is empty. translate again")
@@ -140,18 +136,22 @@ for file in files:
                     text = translateText(speechText,language,"en", globalTranslationProvider)
                     translationProvider = globalTranslationProvider
             else:
-                print("translation already exists")
+                #print("translation already exists")
                 text = existingData[count]["text"]
                 if "translation_provider" not in existingData[count] or existingData[count]["translation_provider"] == "":
                     translationProvider = "azure"
                 else:
                     translationProvider = existingData[count]["translation_provider"]
         else:
-            print("no translation for reuse found, translate again")
+            print("translating ...")
             # no JSON file exists for this day
             if language == "en":
                 text = speechText
                 translationProvider = "none"
+            if language == "sq":
+                # was not available in certain translation providers
+                text = ""
+                translationProvider = ""
             else:
                 text = translateText(speechText,language,"en", globalTranslationProvider)
                 translationProvider = globalTranslationProvider

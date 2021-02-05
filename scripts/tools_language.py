@@ -20,24 +20,15 @@ def translateText(text,from_lang,to_lang,provider):
         return translateAWS(text,from_lang,to_lang)
 
 def translateAWS(text,from_lang,to_lang):
-    translate = boto3.client(service_name='translate', region_name='us-east-1', use_ssl=True)
-
+    translate = boto3.client(service_name='translate', region_name='us-east-2', use_ssl=True)
     parts = textwrap.wrap(text, 2000, break_long_words=False)
-
     translations = []
-
     for part in parts:
         result = translate.translate_text(Text=part, 
             SourceLanguageCode=from_lang, TargetLanguageCode=to_lang)
-        #print(result)
-        #print(response)
         translations.append(result.get('TranslatedText'))
         time.sleep(0.1)
-        
-    #print(' '.join(translations))
     return ' '.join(translations)
-
-
 
 
 def translateMyMemory(text,from_lang,to_lang):
@@ -51,23 +42,11 @@ def translateMyMemory(text,from_lang,to_lang):
 
 def translateGoogle(text,from_lang,to_lang):
     translator = googletrans.Translator()
-
-    
-
-    parts = textwrap.wrap(text, 2000, break_long_words=False)
-
+    parts = textwrap.wrap(text, 4000, break_long_words=False)
     translations = []
-
     for part in parts:
         translation = translator.translate(part, src=from_lang, dest=to_lang)
-        #print(translation)
-        #print(translation._response)
-        #print(result)
-        #print(response)
         translations.append(translation.text)
-        #time.sleep(0.1)
-        
-    #print(' '.join(translations))
     return ' '.join(translations)
 
 
@@ -81,9 +60,13 @@ def translateAzure(text,from_lang,to_lang):
     if not endpoint_var_name in os.environ:
         raise Exception('Please set/export the environment variable: {}'.format(endpoint_var_name))
     endpoint = os.environ[endpoint_var_name]
+
+    location_name = 'TRANSLATOR_LOCATION'
+    if not location_name in os.environ:
+        raise Exception('Please set/export the environment variable: {}'.format(location_name))
+    location = os.environ[location_name]
     # Add your location, also known as region. The default is global.
     # This is required if using a Cognitive Services resource.
-    location = "westeurope"
 
     path = '/translate'
     constructed_url = endpoint + path
@@ -102,9 +85,7 @@ def translateAzure(text,from_lang,to_lang):
         'X-ClientTraceId': str(uuid.uuid4())
     }
 
-
     parts = textwrap.wrap(text, 5000, break_long_words=False)
-
     translations = []
 
     for part in parts:
@@ -114,17 +95,7 @@ def translateAzure(text,from_lang,to_lang):
 
         request = requests.post(constructed_url, params=params, headers=headers, json=body)
         response = request.json()
-        print(response)
+        if request.status_code != 200:
+            print(response)
         translations.append(response[0]["translations"][0]["text"])
-        
-    #print(' '.join(translations))
     return ' '.join(translations)
-
-
-    # You can pass more than one object in body.
-    
-
-    
-
-    #print(json.dumps(response, sort_keys=True, ensure_ascii=False, indent=4, separators=(',', ': ')))
-    #print(response)
