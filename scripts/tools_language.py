@@ -41,7 +41,9 @@ def translateMyMemory(text,from_lang,to_lang):
 
 
 def translateGoogle(text,from_lang,to_lang):
-    translator = googletrans.Translator()
+    #proxy_selector = ProxySelector("109.107.200.151:8080") 
+
+    translator = googletrans.Translator(raise_exception=True,proxies={'http': '109.107.200.151:8080'}, use_fallback=True)
     parts = textwrap.wrap(text, 4000, break_long_words=False)
     translations = []
     for part in parts:

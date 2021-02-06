@@ -20,10 +20,10 @@ files = os.listdir(htmlDir)
 files.sort(reverse=True)
 
 
-globalTranslationProvider = "google"
+globalTranslationProvider = "azure"
 
 
-for file in files:
+for n,file in enumerate(files):
     if not file.endswith(".html"):
         continue
 
@@ -120,7 +120,7 @@ for file in files:
         if (count+1) > len(existingData):
             reuse = False
 
-        print("{year}-{month}-{day} #{count}: {mepid} - {language} - {name}".format(year=year,month=month,day=day,count=count,mepid=MEPId,language=language,name=name))
+        print("{n}/{ntotal} : {year}-{month}-{day} #{count}: {mepid} - {language} - {name}".format(n=n,ntotal=len(files),year=year,month=month,day=day,count=count,mepid=MEPId,language=language,name=name))
 
         texts += 1
         if reuse:
@@ -143,16 +143,18 @@ for file in files:
                 else:
                     translationProvider = existingData[count]["translation_provider"]
         else:
-            print("translating ...")
+            
             # no JSON file exists for this day
             if language == "en":
+                print("using english original")
                 text = speechText
                 translationProvider = "none"
-            if language == "sq":
+            elif language == "sq":
                 # was not available in certain translation providers
                 text = ""
                 translationProvider = ""
             else:
+                print("translating ...")
                 text = translateText(speechText,language,"en", globalTranslationProvider)
                 translationProvider = globalTranslationProvider
             
