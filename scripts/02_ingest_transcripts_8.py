@@ -20,7 +20,7 @@ files = os.listdir(htmlDir)
 files.sort(reverse=True)
 
 
-globalTranslationProvider = "azure"
+globalTranslationProvider = "google"
 
 
 for file in files:

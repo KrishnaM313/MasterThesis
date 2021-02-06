@@ -78,3 +78,23 @@ def downloadMEPInfos(mepID, mepInfoDir, mepInfoDBFilepath, database):
         outfile.write(str(dataEncoded))
 
     return infos, database
+
+def findMEP(mepsByID,mepID):
+    if mepID in mepsByID:
+        return None, mepsByID[mepID]
+    else:
+        return "MepID not found in DB", None
+
+def findMEPName(mep):
+    return findDictKeyValue(mep,"name")
+
+def findMEPParty(mep):
+    return findDictKeyValue(mep,"politicalGroup")
+
+def findDictKeyValue(dictionary,key):
+    if key not in dictionary:
+        return "Key '{key}' does not exist in dictionary".format(key=key), None
+    elif dictionary[key] == "":
+        return "Key '{key}' has empty value".format(key=key), None
+    else:
+        return None, dictionary[key]
