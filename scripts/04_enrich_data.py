@@ -5,10 +5,10 @@ import time
 
 
 import re
-from tools_data import loadJSON, saveJSON
+from tools_data import loadJSON, saveJSON, extractDate
 from tools_parties import extractFromName
 from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
-from tools_analysis import countKeywords, getKeywordsCountArray
+from tools_analysis import countKeywords
 import numpy as np
 
 
@@ -52,6 +52,7 @@ if __name__ == '__main__':
 
 
     for i,file in enumerate(files):
+        date = extractDate(file)
         # loads processed file to save time on double processing
         if file in filesProcessed:
             filePath = os.path.join(JSONEnrichedDir,file)
@@ -64,10 +65,10 @@ if __name__ == '__main__':
                 print("{i}.{n} political group is empty for {mepID}: {mepName}".format(i=i,n=n,mepID=data[n]["mepid"],mepName=data[n]["name"]))
                 politicalGroup = extractFromName(speech['name'])
                 if politicalGroup != -1:
-                    print("{i}/{itotal} - {n}/{ntotal} political group found as reference in name: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),politicalGroup=politicalGroup))
+                    print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found as reference in name: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=politicalGroup))
                     data[n]["politicalGroup"] = politicalGroup
                 else:
-                    print("{i}/{itotal} - {n}/{ntotal} political group not referenced in Name".format(i=i,n=n,itotal=len(files),ntotal=len(data)))
+                    print("{i}/{itotal} - {n}/{ntotal} - {file} - political group not referenced in Name".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date))
                     mepId = speech['mepid']
                     err, mep = findMEP(mepsByID,mepId)
                     if err is not None:
@@ -84,7 +85,7 @@ if __name__ == '__main__':
                         if err is not None:
                             print(err)
                         else:
-                            print("{i}/{itotal} - {n}/{ntotal} political group found in Database: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),politicalGroup=party))
+                            print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found in Database: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=party))
                             data[n]["politicalGroup"] = party
 
 
@@ -92,9 +93,9 @@ if __name__ == '__main__':
             mepId = speech['mepid']
             if mepId == "" or mepId == "n/a":
 
-                print("{i}/{itotal} - {n}/{ntotal} mepID is empty for {mepName}".format(i=i,n=n,itotal=len(files),ntotal=len(data),mepName=data[n]["name"]))
+                print("{i}/{itotal} - {n}/{ntotal} - {file} - mepID is empty for {mepName}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,mepName=data[n]["name"]))
                 name = speech["name"]
-                print("{i}/{itotal} - {n}/{ntotal} No MEP ID available for name {name}".format(i=i,n=n,itotal=len(files),ntotal=len(data),name=name))
+                print("{i}/{itotal} - {n}/{ntotal} - {file} - No MEP ID available for name {name}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name))
                 
                 best = 0
                 for mep in mepsByName:
@@ -105,8 +106,8 @@ if __name__ == '__main__':
                         bestID = mepsByName[mep]
                         print(match)
 
-                if best == 0:
-                    continue
+                #if best == 0:
+                #    continue
                     
 
                 # print(name)
@@ -127,7 +128,7 @@ if __name__ == '__main__':
                     if err is not None:
                         print(err)
                     else:
-                        print("{i}/{itotal} - {n}/{ntotal} name found in Database for mepID: '{name}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),name=name,mepID=mepId))
+                        print("{i}/{itotal} - {n}/{ntotal} - {file} - name found in Database for mepID: '{name}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name,mepID=mepId))
                         data[n]["name"] = name
 
                 #name = mepsByID[mepId]["name"]
@@ -145,13 +146,15 @@ if __name__ == '__main__':
             #     infos, mepDB = downloadMEPInfos(mepId, mepInfoDir, mepInfoDBFilepath, mepDB)
             #     data[n] = dict(data[n].items() + infos.items())
             #     #data[n] = {**data[n] , **infos}
-            health, climate = getKeywordsCountArray(speech,keywords)
-            data[n]["health"] = health
-            data[n]["climate"] = climate
+            #health, climate = getKeywordsCountArray(speech,keywords)
+            keywordAnalysis = countKeywords(speech["text"],keywords)
+            data[n]["keywordAnalysis"] = keywordAnalysis
+            #data[n]["health"] = health
+            #data[n]["climate"] = climate
 
-            test = np.sum(np.array(health)) + np.sum(np.array(climate))
-            if test != 0:
-                print("found speech with keywords: {test} words matched".format(test=test))
+            #test = np.sum(np.array(health)) + np.sum(np.array(climate))
+            #if test != 0:
+            #    print("found speech with keywords: {test} words matched".format(test=test))
                 #print(health)
                 #print(climate)
                 #time.sleep(2)
