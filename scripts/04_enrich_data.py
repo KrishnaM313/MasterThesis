@@ -1,6 +1,7 @@
 import os
 import json
 from fuzzy_match import algorithims
+from fuzzywuzzy import fuzz 
 import time
 
 
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     filePathMepByName = os.path.join(mepInfoDir,"mep_list_by_name.json")
     mepsByName = loadJSON(filePathMepByName)
 
+    
 
     mepInfoDBFilename = "database.json"
     mepInfoDBFilepath = os.path.join(mepInfoDir,mepInfoDBFilename)
@@ -50,6 +52,7 @@ if __name__ == '__main__':
 
     filesProcessed = os.listdir(JSONEnrichedDir)
 
+    verbose = False
 
     for i,file in enumerate(files):
         date = extractDate(file)
@@ -61,16 +64,42 @@ if __name__ == '__main__':
         data = loadJSON(filePath)
 
         for n,speech in enumerate(data):
+            # Search for name if mepID is empty
+            if speech['mepid'] == "" or speech['mepid'] == "n/a":
+                name = speech["name"]
+                print("No MEP ID available for name {name}".format(name=name))
+                print("{i}/{itotal} - {n}/{ntotal} - {file} - mepID is empty for {mepName}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,mepName=data[n]["name"]))
+                #name = speech["name"]
+                #print("{i}/{itotal} - {n}/{ntotal} - {file} - No MEP ID available for name {name}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name))
+                
+                best = 0
+                for mep in mepsByName:
+                    match = fuzz.partial_ratio(name.lower(),mep.lower())
+                    #exit()
+                    if match > 90 and match > best:
+                        best = match
+                        bestName = mep
+                        bestID = mepsByName[mep]
+                        speech['mepid'] = bestID
+                        print("Found Name '{mep}' for given name '{name}'. Will now use id '{bestID}'".format(mep=mep,name=name, bestID=bestID))
+                if best == 0:
+                    print("No mepID could be found for name: {name}".format(name=name))
+                ## TODO: search for ID based on name
+ 
+            
+            # Search for political Group based on mepID
             if "politicalGroup" not in data[n] or data[n]["politicalGroup"] == "":
-                print("{i}.{n} political group is empty for {mepID}: {mepName}".format(i=i,n=n,mepID=data[n]["mepid"],mepName=data[n]["name"]))
-                politicalGroup = extractFromName(speech['name'])
-                if politicalGroup != -1:
-                    print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found as reference in name: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=politicalGroup))
+                if verbose:
+                    print("{i}.{n} political group is empty for {mepID}: {mepName}".format(i=i,n=n,mepID=data[n]["mepid"],mepName=data[n]["name"]))
+                err, politicalGroup = extractFromName(speech['name'])
+                if err is None:
+                    if verbose:
+                        print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found as reference in name: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=politicalGroup))
                     data[n]["politicalGroup"] = politicalGroup
                 else:
+                    print(err)
                     print("{i}/{itotal} - {n}/{ntotal} - {file} - political group not referenced in Name".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date))
-                    mepId = speech['mepid']
-                    err, mep = findMEP(mepsByID,mepId)
+                    err, mep = findMEP(mepsByID, speech['mepid'], mepInfoDir, mepInfoDBFilepath)
                     if err is not None:
                         print(err)
                     else:
@@ -82,71 +111,33 @@ if __name__ == '__main__':
 
 
                         err, party = findMEPParty(mep)
-                        if err is not None:
-                            print(err)
-                        else:
-                            print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found in Database: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=party))
+                        if err is None:
+                            if verbose:
+                                print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found in Database: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=party))
                             data[n]["politicalGroup"] = party
+                        else:
+                            print(err)
 
 
            
-            mepId = speech['mepid']
-            if mepId == "" or mepId == "n/a":
 
-                print("{i}/{itotal} - {n}/{ntotal} - {file} - mepID is empty for {mepName}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,mepName=data[n]["name"]))
-                name = speech["name"]
-                print("{i}/{itotal} - {n}/{ntotal} - {file} - No MEP ID available for name {name}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name))
-                
-                best = 0
-                for mep in mepsByName:
-                    match = algorithims.jaro_winkler(name,mep)
-                    if match > 0.80 and match > best:
-                        best = match
-                        bestName = mep
-                        bestID = mepsByName[mep]
-                        print(match)
-
-                #if best == 0:
-                #    continue
-                    
-
-                # print(name)
-                # print("result")
-                # print(bestName)
-                # print(bestID)
-                # exit()
-
-                # print(match)
-
-                # exit()
-            else:
-                err, mep = findMEP(mepsByID,mepId)
+            if not (speech['mepid'] == "" or speech['mepid'] == "n/a"):
+                err, mep = findMEP(mepsByID, speech['mepid'], mepInfoDir, mepInfoDBFilepath)
                 if err is not None:
                     print(err)
                 else:
+                    if "politicalGroup" not in data[n] or data[n]["politicalGroup"] == "":
+                        if "politicalGroup" in mep:
+                            data[n]["politicalGroup"] = mep["politicalGroup"]
+
                     err, name = findMEPName(mep)
                     if err is not None:
                         print(err)
                     else:
-                        print("{i}/{itotal} - {n}/{ntotal} - {file} - name found in Database for mepID: '{name}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name,mepID=mepId))
+                        if verbose:
+                            print("{i}/{itotal} - {n}/{ntotal} - {file} - name found in Database for mepID: '{name}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,name=name,mepID=mepId))
                         data[n]["name"] = name
 
-                #name = mepsByID[mepId]["name"]
-                #politicalGroup = mepsByID[mepId]["politicalGroup"]
-                #country = mepsByID[mepId]["country"]
-                #nationalPoliticalGroup = mepsByID[mepId]["nationalPoliticalGroup"]
-
-                #data[n]["name"] = name
-                #data[n]["politicalGroup"] = politicalGroup
-                #data[n]["country"] = country
-                #data[n]["nationalPoliticalGroup"] = nationalPoliticalGroup
-        #print(data[0])
-
-            # if mepId != "" and mepId != "n/a":
-            #     infos, mepDB = downloadMEPInfos(mepId, mepInfoDir, mepInfoDBFilepath, mepDB)
-            #     data[n] = dict(data[n].items() + infos.items())
-            #     #data[n] = {**data[n] , **infos}
-            #health, climate = getKeywordsCountArray(speech,keywords)
             keywordAnalysis = countKeywords(speech["text"],keywords)
             data[n]["keywordAnalysis"] = keywordAnalysis
             #data[n]["health"] = health
@@ -163,7 +154,7 @@ if __name__ == '__main__':
                 filePathOut = os.path.join(JSONEnrichedDir,file)
                 saveJSON(data, filePathOut)
 
-            
-
+        #print(file)
+        #exit()
         filePathOut = os.path.join(JSONEnrichedDir,file)
         saveJSON(data, filePathOut)

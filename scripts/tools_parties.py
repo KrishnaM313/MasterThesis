@@ -8,9 +8,9 @@ def extractFromName(name):
         name = result.group(1)
         if name == "S&amp;D":
             name = "S&D"
-        return name
+        return None, name
     else:
-        return -1
+        return "No name found", None
 
 def getParty(speech):
     if "politicalGroup" in speech:

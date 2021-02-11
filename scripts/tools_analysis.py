@@ -76,14 +76,20 @@ def updateAnalysisRow(category: str,fileAnalysis: pd.DataFrame,speechAnalysis: p
     #print(fileAnalysis)
     return fileAnalysis[category]
 
-def doKeywordAnalysis(speech, date: str, politicalGroup: str,  fileAnalysis: dict):
+def doKeywordAnalysis(speech, category: str):
     if "keywordAnalysis" in speech:
-        speechAnalysis = getDataFrames(speech["keywordAnalysis"], date, politicalGroup)
+        #speechAnalysis = getDataFrames(speech["keywordAnalysis"], date, politicalGroup)
 
-        if fileAnalysis is None:
-            fileAnalysis = speechAnalysis
-        else:
-            fileAnalysis = appendAnalysis(fileAnalysis,speechAnalysis)
+        df = pd.Series(speech["keywordAnalysis"][category]).to_frame().T
+        return None, df
+        # df["date"] = date
+        # dataFrames[category] = df
+        #return dataFrames
+
+        # if fileAnalysis is None:
+        #     fileAnalysis = speechAnalysis
+        # else:
+        #     fileAnalysis = appendAnalysis(fileAnalysis,speechAnalysis)
         #for category in fileAnalysis:
             #print(tabulate(fileAnalysis[category], headers='keys', tablefmt='psql'))
 
@@ -91,16 +97,16 @@ def doKeywordAnalysis(speech, date: str, politicalGroup: str,  fileAnalysis: dic
         #     exit()
         # count += 1
     else:
-        print("keyword Analysis missing")
-    return fileAnalysis
+        return "keyword Analysis missing", None
 
 def doFileAnalysis(data, date, parties, fileAnalysis):
     for n,speech in enumerate(data):
         parties, politicalGroup = getParty(speech, parties)
         fileAnalysis = doKeywordAnalysis(speech, date, politicalGroup,  fileAnalysis)
+
     return parties, politicalGroup, fileAnalysis
 
-def analyseFile(filePath):
+def analyseFile(filePath,verbose=False):
     date = extractDate(filePath)
     data = loadJSON(filePath)
 
@@ -111,11 +117,32 @@ def analyseFile(filePath):
     baseDir = "/home/user/workspaces/MasterThesis/data"
     analysisDir = os.path.join(baseDir,"analysis")
 
-    fileAnalysis = None
-    for n,speech in enumerate(data):
-        politicalGroup = getParty(speech)
-        fileAnalysis = doKeywordAnalysis(speech, date, politicalGroup,  fileAnalysis) 
+    for category in keywords:
+        fileAnalysis = None
+        categoryAnalysis = None
+        for n,speech in enumerate(data):
+            politicalGroup = getParty(speech)
+            err, speechAnalysis = doKeywordAnalysis(speech, category)
+            if err:
+                print(err)
+            speechAnalysis.loc[0,"politicalGroup"] = politicalGroup
+            speechAnalysis.loc[0,"date"] = date
 
-    for category in fileAnalysis:
+            if fileAnalysis is not None:
+                if (fileAnalysis['politicalGroup'] == politicalGroup).any():
+                    oldRow = fileAnalysis.loc[fileAnalysis['politicalGroup'] == politicalGroup]
+                    newRow = speechAnalysis
+                    sumRows = oldRow.add(newRow)
+                    sumRows.loc[0,"politicalGroup"] = politicalGroup
+                    sumRows.loc[0,"date"] = date
+                    fileAnalysis.loc[fileAnalysis['politicalGroup'] == politicalGroup] = sumRows
+                else:
+                    fileAnalysis = pd.concat([fileAnalysis, speechAnalysis])
+            else:
+                fileAnalysis = pd.concat([fileAnalysis, speechAnalysis])
+
+    #for category in keywords:
         fileAnalysisPath = os.path.join(analysisDir,date + "-" +category + ".csv")
-        fileAnalysis[category].to_csv(fileAnalysisPath, index=False)  
+        if verbose:
+            print("Save {category} {date} to {file}".format(category=category,date=date,file=fileAnalysisPath))
+        fileAnalysis.to_csv(fileAnalysisPath, index=False)  

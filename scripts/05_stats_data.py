@@ -22,6 +22,7 @@ healthAnalysisNA = 0
 climateAnalysisNA = 0
 
 
+
 def addToFileAnalysis(date, keyword, analysisArray, healthAnalysisFile,keywords):
     columns = len(keywords[keyword])
     if healthAnalysisFile is None:
@@ -76,13 +77,13 @@ if __name__ == '__main__':
     fileAnalysis = None
 
     for i,file in enumerate(tqdm(filePaths)):
-        print(file)
-        file = "/home/user/workspaces/MasterThesis/data/json_enriched/2014-07-01.json"
+        #print(file)
+        #file = "/home/user/workspaces/MasterThesis/data/json_enriched/2014-07-01.json"
         # if i > 5:
         #     exit()
         analyseFile(file)
 
-        exit()
+
 
         # filePath = os.path.join(JSONEnrichedDir,file)
         # data = loadJSON(filePath)
