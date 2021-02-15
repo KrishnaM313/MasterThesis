@@ -160,7 +160,11 @@ terms = [
     start = "2014-01-01",
     end = "2019-12-31"
   ),
-
+  dict(
+    number = 9,
+    start = "2019-01-01",
+    end = "2024-12-31"
+  )
 ]
 
 import pickle
@@ -207,17 +211,18 @@ for term in terms:
 
   
 
-    if localFilename not in notAvailableDocuments:
-      try:
-        downloadedFiles = os.listdir(downloadDir)
-      except:
-        print("Error downloading")
-      print(fileUrl)
-      result = downlodFile(fileUrl,localPath)
-      if(result == 1):
-        notAvailableDocuments.append(localFilename)
-    else:
-      print("skipped {filename}".format(filename=localFilename))
+    #if localFilename not in notAvailableDocuments:
+    try:
+      downloadedFiles = os.listdir(downloadDir)
+    except:
+      print("Error downloading")
+    print(fileUrl)
+    result = downlodFile(fileUrl,localPath)
+    if(result == 1):
+      notAvailableDocuments.append(localFilename)
+    time.sleep(0.1)
+    #else:
+    #  print("skipped {filename}".format(filename=localFilename))
       
   
 

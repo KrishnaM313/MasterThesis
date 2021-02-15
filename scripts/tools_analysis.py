@@ -47,6 +47,9 @@ def updateAnalysisRow(category: str,fileAnalysis: pd.DataFrame,speechAnalysis: p
     party = speechAnalysis[category]["politicalParty"][0]
     date = speechAnalysis[category]["date"][0]
 
+    if party == "":
+        party = "na"
+
     if verbose:
         print("Party: {party}, date: {date}".format(party=party,date=date))
 

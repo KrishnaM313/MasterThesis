@@ -7,7 +7,7 @@ import time
 
 import re
 from tools_data import loadJSON, saveJSON, extractDate
-from tools_parties import extractFromName
+from tools_parties import extractFromName, fixParty
 from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
 from tools_analysis import countKeywords
 import numpy as np
@@ -92,6 +92,7 @@ if __name__ == '__main__':
                 if verbose:
                     print("{i}.{n} political group is empty for {mepID}: {mepName}".format(i=i,n=n,mepID=data[n]["mepid"],mepName=data[n]["name"]))
                 err, politicalGroup = extractFromName(speech['name'])
+                politicalGroup = fixParty(politicalGroup)
                 if err is None:
                     if verbose:
                         print("{i}/{itotal} - {n}/{ntotal} - {file} - political group found as reference in name: '{politicalGroup}'".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,politicalGroup=politicalGroup))

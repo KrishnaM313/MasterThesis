@@ -5,26 +5,25 @@ import time
 from langdetect import detect
 from tools_data import loadJSON, saveJSON, loadFile
 from tools_language import translateText
-from tqdm import tqdm
 
 baseDir = "/home/user/workspaces/MasterThesis/data" 
 
-htmlDir = os.path.join(baseDir, "html")
-JSONDir = os.path.join(baseDir, "json")
+xmlDir = os.path.join(baseDir, "html")
+JSONDir = os.path.join(baseDir, "json2xml")
 
 availableJSONFiles = os.listdir(JSONDir)
 
 if not os.path.exists(JSONDir):
     os.makedirs(JSONDir)
 
-files = os.listdir(htmlDir)
+files = os.listdir(xmlDir)
 files.sort(reverse=True)
 
 
-globalTranslationProvider = "azure"
+globalTranslationProvider = "google"
 
 
-for n,file in enumerate(tqdm(files)):
+for n,file in enumerate(files):
     if not file.endswith(".html"):
         continue
 
@@ -52,7 +51,7 @@ for n,file in enumerate(tqdm(files)):
 
     print(file)
 
-    filePath = os.path.join(htmlDir,file)
+    filePath = os.path.join(xmlDir,file)
     data = loadFile(filePath)
 
     #p = re.compile('<table width="100%" border="0" cellpadding="5" cellspacing="0">(.+?)<\/table><\/td><\/tr><\/table>/mgs', re.DOTALL)
@@ -132,7 +131,7 @@ for n,file in enumerate(tqdm(files)):
                 if language == "en":
                     text = speechText
                     translationProvider = "none"
-                elif language == "sq" or language == "so":
+                elif language == "sq":
                     # was not available in certain translation providers
                     text = ""
                     translationProvider = ""
@@ -154,7 +153,7 @@ for n,file in enumerate(tqdm(files)):
                 print("using english original")
                 text = speechText
                 translationProvider = "none"
-            elif language == "sq" or language == "so":
+            elif language == "sq":
                 # was not available in certain translation providers
                 text = ""
                 translationProvider = ""

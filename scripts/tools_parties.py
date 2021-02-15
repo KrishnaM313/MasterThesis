@@ -15,8 +15,12 @@ def extractFromName(name):
 def getParty(speech):
     if "politicalGroup" in speech:
         politicalGroup = speech["politicalGroup"]
+        if politicalGroup == "":
+            politicalGroup = "na"
+        elif politicalGroup == "None" or politicalGroup is None:
+            politicalGroup = "na"
     else:
-        politicalGroup = "None"
+        politicalGroup = "na"
     return politicalGroup
 
 def getPartyStats(speech, parties):
@@ -35,3 +39,21 @@ def getPartyStats(speech, parties):
             parties["none"] = 1
             politicalGroup = "None"
     return parties, politicalGroup
+
+def fixParty(party):
+    if party is not None:
+        party = party.strip()
+    if party == "PPE-DE":
+        return "PPE"
+    elif party == "EFD":
+        return "EFDD"
+    elif party == "ENL":
+        return "ENF"
+    elif party == "S&amp;D" or party == "S" or party == "PSE":
+        return "S&D"
+    elif party == "Verts.ALE":
+        return "Verts/ALE"
+    elif party == "The Earl of) Dartmouth (EFDD" or party == "The Earl of) Dartmouth Mike Hookem Diane James Margot Parker and Julia Reid (EFDD" or party == "The Earl of":
+        return "EFDD"
+
+    return party

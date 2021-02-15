@@ -77,37 +77,26 @@ if __name__ == '__main__':
     fileAnalysis = None
 
     for i,file in enumerate(tqdm(filePaths)):
-        #print(file)
-        #file = "/home/user/workspaces/MasterThesis/data/json_enriched/2014-07-01.json"
-        # if i > 5:
-        #     exit()
         analyseFile(file)
 
+    # Parallel(n_jobs=-1)(
+    #     delayed(analyseFile)(file) for file in tqdm(filePaths)
+    # )
 
-
-        # filePath = os.path.join(JSONEnrichedDir,file)
-        # data = loadJSON(filePath)
-
-        # parties, politicalGroup, fileAnalysis = doFileAnalysis(data, date, parties, fileAnalysis)
-
-
-        
-
-    # for category in fileAnalysis:
-    #     fileAnalysisPath = os.path.join(analysisDir,category + ".csv")
-    #     fileAnalysis[category].to_csv(fileAnalysisPath, index=False)  
-
-    # if healthAnalysisFiles:
-    #     healthAnalysis = pd.concat(healthAnalysisFiles)
-    #     healthAnalysis.to_csv(healthAnalysisCSVPath, index=False)  
-
-    # if climateAnalysisFile:
-    #     climateAnalysis = pd.concat(climateAnalysisFiles)
-    #     climateAnalysis.to_csv(climateAnalysisCSVPath, index=False)  
-    #print(climateAnalysis)
-    #print(healthAnalysis)
-        
     
+    analysisDir = os.path.join(baseDir,"analysis")
+    analysisSummaryDir = os.path.join(baseDir,"analysisSummary")
+    if not os.path.isdir(analysisSummaryDir):
+        os.mkdir(analysisSummaryDir)
+    # climate
 
-    #print(parties)
+    for keyword in ["climate", "health"]:
+        keywordAnalysis = None
+        for i,file in enumerate(tqdm(files)):
+            date = extractDate(file)
+            filePath = os.path.join(analysisDir, "{date}-{keyword}.csv".format(date=date,keyword=keyword))
+            fileAnalysis = pd.read_csv(filePath)
+            keywordAnalysis = pd.concat([keywordAnalysis, fileAnalysis])
 
+        fileAnalysisPath = os.path.join(analysisSummaryDir, "{keyword}.csv".format(keyword=keyword))
+        keywordAnalysis.to_csv(fileAnalysisPath, index=False)  
