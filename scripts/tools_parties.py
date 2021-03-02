@@ -41,9 +41,9 @@ def getPartyStats(speech, parties):
     return parties, politicalGroup
 
 def fixParty(party):
-    party = party.strip()
-    if party is not None:
+    if isinstance(party, str):
         party = party.strip()
+
     if party == "PPE-DE":
         return "PPE"
     elif party == "EFD":
@@ -52,16 +52,19 @@ def fixParty(party):
         return "ENF"
     elif party == "S&amp;D" or party == "S" or party == "PSE" or party == " S&amp;D":
         return "S&D"
-    elif party in ["Verts.ALE"]:
+    elif party == "Verts.ALE":
         return "Verts/ALE"
     elif party == "The Earl of) Dartmouth (EFDD" or party == "The Earl of) Dartmouth Mike Hookem Diane James Margot Parker and Julia Reid (EFDD" or party == "The Earl of":
         return "EFDD"
-
+    elif party is None or party == "" or party == "None":
+        return "na"
+    
     return party
 
 def getPartyIdeology(party):
-    if party is not None:
+    if isinstance(party, str):
         party = party.strip()
+
     if party in ["GUE/NGL", "The Left"]:
         return "Left-wing"
     elif party in ["S&D"]:
@@ -72,14 +75,16 @@ def getPartyIdeology(party):
         return "Liberals and centrists"
     elif party in ["PPE", "ECR", "RDE"]:
         return "Christian democrats and conservatives"
-    elif party in ["EFDD"]:
+    elif party in ["EFDD","IND/DEM"]:
         return "Eurosceptic conservatives"
     elif party in ["ID", "ENF"]:
         return "Far-right nationalists"
     elif party in ["NI"]:
         return "Non-Inscrits"
-    else:
+    elif party is None or party == "" or party == "None":
         return "na"
+    
+    return party
 
     # What is IND/DEM?
 

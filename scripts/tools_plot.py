@@ -2,6 +2,8 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 import os
+import numpy as np
+import matplotlib.dates as dates
 
 
 def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False) -> plt:
@@ -14,13 +16,26 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     if dropNA:
         data = data[data[dataKey] != "na"]
 
-    print(data.groupby(dataKey)[dataKey].agg("count"))
+    groups = data.groupby(dataKey)
+    print(groups[dataKey].agg("count"))
     plt.clf()
 
-    data.groupby(dataKey)['sum'].plot(stacked=True)
+    groups['sum'].plot(stacked=True)
     plt.legend(bbox_to_anchor=(1,1), loc="upper left")
     plt.title(category)
     plt.tight_layout()
+
+
+    # print(data.head())
+    # exit()
+    # for memberEntries in groups:
+    #     print(memberEntries[["date"]])
+    #     x = dates.date2num(memberEntries[["date"]])
+    #     y = memberEntries[["sum"]]
+
+    #     z = np.polyfit(x, y, 1)
+    #     p = np.poly1d(z)
+    #     plt.plot(x,p(x),"r--")
 
     # data = data.groupby("politicalGroup")
     # print(data.head())
