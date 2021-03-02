@@ -6,7 +6,7 @@ import time
 
 
 import re
-from tools_data import loadJSON, saveJSON, extractDate
+from tools_data import loadJSON, saveJSON, extractDate, findDictKeyValue, speechHasOnlyNameInfo
 from tools_parties import extractFromName, fixParty
 from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
 from tools_analysis import countKeywords
@@ -16,10 +16,17 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    baseDir = "/home/user/workspaces/MasterThesis/data"
+    rootDir = "/home/user/workspaces/MasterThesis"
+
+    baseDir = os.path.join(rootDir,"data")
 
     mepInfoDir = os.path.join(baseDir,"meps")
 
+
+    manualFixDBFilepath = os.path.join(rootDir,"scripts","settings","manual-mep-association.json")
+    print(manualFixDBFilepath)
+    manualFixDB = loadJSON(manualFixDBFilepath)
+    
 
     filePathMepById = os.path.join(mepInfoDir,"mep_list_by_id.json")
     mepsByID = loadJSON(filePathMepById)
@@ -65,8 +72,10 @@ if __name__ == '__main__':
 
         for n,speech in enumerate(data):
             # Search for name if mepID is empty
-            if speech['mepid'] == "" or speech['mepid'] == "n/a":
-                name = speech["name"]
+
+            # 1st try: automatic fuzzy matching of name
+            if speechHasOnlyNameInfo(speech):
+                # Just the Name of the speaker exists, mepID and politicalGroup are missing
                 print("No MEP ID available for name {name}".format(name=name))
                 print("{i}/{itotal} - {n}/{ntotal} - {file} - mepID is empty for {mepName}".format(i=i,n=n,itotal=len(files),ntotal=len(data),file=date,mepName=data[n]["name"]))
                 #name = speech["name"]
@@ -84,6 +93,24 @@ if __name__ == '__main__':
                         print("Found Name '{mep}' for given name '{name}'. Will now use id '{bestID}'".format(mep=mep,name=name, bestID=bestID))
                 if best == 0:
                     print("No mepID could be found for name: {name}".format(name=name))
+
+            # 2nd try with manual matching
+            if speechHasOnlyNameInfo(speech):
+                # Just the Name of the speaker exists, mepID and politicalGroup are missing
+                err, fix = findDictKeyValue(manualFixDB,data[n]["name"])
+                if err is not None:
+                    print(err)
+                    print(speech)
+                    exit()
+                else:
+                    if "politicalGroup" in fix:
+                        speech["politicalGroup"] = fix["politicalGroup"]
+                    if "mepID" in fix:
+                        speech["mepid"] = fix["mepid"]
+
+                name = speech["name"]
+
+                
                 ## TODO: search for ID based on name
  
             

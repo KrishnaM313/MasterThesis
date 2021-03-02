@@ -1,7 +1,7 @@
 from collections import Counter
 import pandas as pd
 from tools_parties import getParty
-from tools_data import extractDate, loadJSON, saveJSON
+from tools_data import extractDate, loadJSON, saveJSON, findDictKeyValue, addDictionaries
 import os
 
 def countKeywords(text, keywordCategories):
@@ -148,4 +148,29 @@ def analyseFile(filePath,verbose=False):
         fileAnalysisPath = os.path.join(analysisDir,date + "-" +category + ".csv")
         if verbose:
             print("Save {category} {date} to {file}".format(category=category,date=date,file=fileAnalysisPath))
-        fileAnalysis.to_csv(fileAnalysisPath, index=False)  
+        fileAnalysis.to_csv(fileAnalysisPath, index=False)
+
+def analyseFileQuality(filePath,verbose=False):
+    #date = extractDate(filePath)
+    
+    data = loadJSON(filePath)
+
+    result = {}
+
+    for n,speech in enumerate(data):
+        response = {}
+        response = updateDataQualityResponse(speech,response,"politicalGroup")
+        response = updateDataQualityResponse(speech,response,"mepid")
+        response = updateDataQualityResponse(speech,response,"name")
+        result = addDictionaries(response, result)
+
+    return result
+
+def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
+    err, politicalGroup = findDictKeyValue(data,key)
+    if err is None:
+        response[key + "Exists"] = 1
+    else:
+        response[key + "Missing"] = 1
+    return response
+

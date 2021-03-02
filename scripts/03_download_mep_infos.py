@@ -3,6 +3,7 @@ import os
 import json
 from xml.etree import ElementTree as ET
 from tools_data import download, saveJSON
+from tools_meps import reorderNames
 import pandas as pd
 
 baseDir = "/home/user/workspaces/MasterThesis/data"
@@ -13,27 +14,6 @@ mepInfoDir = os.path.join(baseDir,"meps")
 
 if not os.path.exists(mepInfoDir):
   os.makedirs(mepInfoDir)
-
-# if os.path.isfile(filePath):
-#     print ("file exists")
-#     return 2
-
-
-def reorderNames(database,nameColumn="NOM",reorderdNameColumn="name"):
-    for index, _ in database.iterrows():
-        name = database.loc[index, nameColumn]
-        if name != name:
-            continue
-        for i in range(0, len(name)-3):
-            if  name[i].isupper() and name[i+1].isspace() and name[i+2].isupper() and name[i+3].islower():
-            
-                lastName = name[0:i+1]
-                firstName = name[i+2:len(name)]
-                reorderedName = firstName + " " + lastName
-                database.loc[index, reorderdNameColumn] = reorderedName
-                break
-    return database
-
 
 
 xlsInfo2014FilePath = os.path.join(mepInfoDir,filename + "_2014" + ".xls")

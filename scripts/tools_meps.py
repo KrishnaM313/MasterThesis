@@ -3,7 +3,7 @@ import re
 import time
 import urllib.request
 from urllib.error import HTTPError
-from tools_data import loadJSON, saveJSON
+from tools_data import loadJSON, saveJSON, findDictKeyValue
 import json
 
 
@@ -122,10 +122,19 @@ def findMEPName(mep):
 def findMEPParty(mep):
     return findDictKeyValue(mep,"politicalGroup")
 
-def findDictKeyValue(dictionary,key):
-    if key not in dictionary:
-        return "Key '{key}' does not exist in dictionary".format(key=key), None
-    elif dictionary[key] == "":
-        return "Key '{key}' has empty value".format(key=key), None
-    else:
-        return None, dictionary[key]
+
+# Function changes "LASTNAME firstName" to "firstName LASTNAME"
+def reorderNames(database,nameColumn="NOM",reorderdNameColumn="name"):
+    for index, _ in database.iterrows():
+        name = database.loc[index, nameColumn]
+        if name != name:
+            continue
+        for i in range(0, len(name)-3):
+            if  name[i].isupper() and name[i+1].isspace() and name[i+2].isupper() and name[i+3].islower():
+            
+                lastName = name[0:i+1]
+                firstName = name[i+2:len(name)]
+                reorderedName = firstName + " " + lastName
+                database.loc[index, reorderdNameColumn] = reorderedName
+                break
+    return database

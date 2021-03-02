@@ -6,6 +6,7 @@ import urllib.request
 from urllib.error import HTTPError
 from xml.etree import ElementTree as ET
 import pandas as pd
+from collections import Counter
 
 
 def downlodFile(fileUrl,filePath):
@@ -87,3 +88,24 @@ def extractDate(filename):
   month = FilenameExtraction.group(2)
   day = FilenameExtraction.group(3)
   return "{year}-{month}-{day}".format(year=year,month=month,day=day)
+
+
+def findDictKeyValue(dictionary,key):
+    if dictionary is None:
+        return "Dictionary is None", None
+    elif key not in dictionary:
+        return "Key '{key}' does not exist in dictionary".format(key=key), None
+    elif dictionary[key] == "":
+        return "Key '{key}' has empty value".format(key=key), None
+    else:
+        return None, dictionary[key]
+
+def speechHasOnlyNameInfo(speech):
+  if ("politicalGroup" not in speech or speech["politicalGroup"] is None) \
+    and (speech['mepid'] == "" or speech['mepid'] == "n/a") \
+    and speech['name']:
+    return True
+  return False
+
+def addDictionaries(x: dict,y: dict) -> dict:
+    return dict(Counter(x)+Counter(y))

@@ -41,6 +41,7 @@ def getPartyStats(speech, parties):
     return parties, politicalGroup
 
 def fixParty(party):
+    party = party.strip()
     if party is not None:
         party = party.strip()
     if party == "PPE-DE":
@@ -49,11 +50,40 @@ def fixParty(party):
         return "EFDD"
     elif party == "ENL":
         return "ENF"
-    elif party == "S&amp;D" or party == "S" or party == "PSE":
+    elif party == "S&amp;D" or party == "S" or party == "PSE" or party == " S&amp;D":
         return "S&D"
-    elif party == "Verts.ALE":
+    elif party in ["Verts.ALE"]:
         return "Verts/ALE"
     elif party == "The Earl of) Dartmouth (EFDD" or party == "The Earl of) Dartmouth Mike Hookem Diane James Margot Parker and Julia Reid (EFDD" or party == "The Earl of":
         return "EFDD"
+
+    return party
+
+def getPartyIdeology(party):
+    if party is not None:
+        party = party.strip()
+    if party in ["GUE/NGL", "The Left"]:
+        return "Left-wing"
+    elif party in ["S&D"]:
+        return "Social democrats"
+    elif party in ["Verts/ALE"]:
+        return "Greens and regionalists"
+    elif party in ["ALDE", "ELDR", "Renew", "LDR"]:
+        return "Liberals and centrists"
+    elif party in ["PPE", "ECR", "RDE"]:
+        return "Christian democrats and conservatives"
+    elif party in ["EFDD"]:
+        return "Eurosceptic conservatives"
+    elif party in ["ID", "ENF"]:
+        return "Far-right nationalists"
+    elif party in ["NI"]:
+        return "Non-Inscrits"
+    else:
+        return "na"
+
+    # What is IND/DEM?
+
+    # https://en.wikipedia.org/wiki/European_Parliament
+    # https://www.europe-politique.eu/parlement-europeen.htm
 
     return party
