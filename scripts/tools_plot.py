@@ -17,7 +17,13 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
         data = data[data[dataKey] != "na"]
 
     groups = data.groupby(dataKey)
-    print(groups[dataKey].agg("count"))
+
+    overview = groups[dataKey].agg("count")
+    print(overview)
+    if saveFigDirectoryPath is not None:
+        overviewFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.json".format(category=category, dataKey=dataKey))
+        overview.to_json(overviewFilePath)
+
     plt.clf()
 
     groups['sum'].plot(stacked=True)
