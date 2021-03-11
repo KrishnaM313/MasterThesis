@@ -10,7 +10,7 @@ from tools_parties import extractFromName, fixParty, getPartyIdeology
 
 if __name__ == '__main__':
 
-    rootDir = "/Users/michael/workspaces/MasterThesis"
+    rootDir = "/home/user/workspaces/MasterThesis"
 
     baseDir = os.path.join(rootDir,"data")
 
