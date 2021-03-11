@@ -1,22 +1,16 @@
 import os
-import json
-from fuzzy_match import algorithims
-from fuzzywuzzy import fuzz 
-import time
 
+from fuzzywuzzy import fuzz
 
-import re
-from tools_data import loadJSON, saveJSON, extractDate, findDictKeyValue, speechHasOnlyNameInfo
-from tools_parties import extractFromName, fixParty
-from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
 from tools_analysis import countKeywords
-import numpy as np
-
-
+from tools_data import (extractDate, findDictKeyValue, loadJSON, saveJSON,
+                        speechHasOnlyNameInfo)
+from tools_meps import findMEP, findMEPName, findMEPParty
+from tools_parties import extractFromName, fixParty, getPartyIdeology
 
 if __name__ == '__main__':
 
-    rootDir = "/home/user/workspaces/MasterThesis"
+    rootDir = "/Users/michael/workspaces/MasterThesis"
 
     baseDir = os.path.join(rootDir,"data")
 
@@ -43,7 +37,7 @@ if __name__ == '__main__':
 
     ### Keyword Analysis
 
-    keywordsFilePath = "/home/user/workspaces/MasterThesis/scripts/02_ingest_transcripts/keywords.json"
+    keywordsFilePath = os.path.join(rootDir,"scripts/02_ingest_transcripts/keywords.json")
     keywords = loadJSON(keywordsFilePath)
 
 
@@ -146,7 +140,10 @@ if __name__ == '__main__':
                         else:
                             print(err)
 
-
+            if "politicalGroup" in data[n]:
+                data[n]["partyIdeology"] = getPartyIdeology(data[n]["politicalGroup"])
+            else:
+                data[n]["partyIdeology"] = "na"
            
 
             if not (speech['mepid'] == "" or speech['mepid'] == "n/a"):
