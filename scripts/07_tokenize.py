@@ -7,6 +7,9 @@ import torch
 
 if __name__ == '__main__':
 
+
+    small = False
+
     repoDir = getBaseDir()
     baseDir = os.path.join(repoDir,"data")
     JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
@@ -72,8 +75,9 @@ if __name__ == '__main__':
             #print(output)
 
             #texts += [speech["text"]]
-            
-        #break
+
+        if small:    
+            break
         # print(texts)
         # print(labels)
         # print(dates)
@@ -86,9 +90,14 @@ if __name__ == '__main__':
     print(type(tensor))
     print(len(texts))
     print(tensor.size())
-    torch.save(tensor, os.path.join(embeddingsDir,"texts_"+str(year)+str(month)+str(day)))
-    torch.save(torch.tensor(dates), os.path.join(embeddingsDir,"dates_"+str(year)+str(month)+str(day)))
-    torch.save(torch.tensor(labels), os.path.join(embeddingsDir,"labels_"+str(year)+str(month)+str(day)))
+
+    postfix = ""
+    if small:
+        postfix = "_small"
+
+    torch.save(tensor, os.path.join(embeddingsDir,"texts"+postfix))
+    torch.save(torch.tensor(dates), os.path.join(embeddingsDir,"dates"+postfix))
+    torch.save(torch.tensor(labels), os.path.join(embeddingsDir,"labels"+postfix))
     #print(output)
     #print(labels)
     
