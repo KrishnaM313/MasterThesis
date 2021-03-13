@@ -7,6 +7,7 @@ import matplotlib.dates as dates
 from collections import Counter
 import matplotlib.pyplot as plt
 from tools_data import saveJSON
+from tools_counter import getCounterPercentile
 
 
 def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False) -> plt:
@@ -64,16 +65,30 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
 
 def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None):
     plt.clf()
+
+
     labels, values = zip(*counter.items())
+    
+    
+
 
     indexes = np.arange(len(labels))
     width = 1
 
     plt.bar(indexes, values, width)
-    title = "Speeches "+category+" Count"
+
+    percentile95 = getCounterPercentile(95,counter)
+    plt.axvline(x=percentile95, color="red", label="95 percentile ("+str(percentile95)+")")
+
+    # mean, variance, std_dev = getCounterStats(counter)
+    # plt.axvline(x=percentile95, color="green", label="mean")
+    # plt.axvline(x=percentile95, color="yellow", label="median")
+
+    title = "Speeches "+str.title(category)+" Count"
     if startYear is not None:
         title = title + " " + str(startYear) + "-" +  str(endYear)
     plt.title(title)
+    plt.legend()
 
     if showPlot is True:
         plt.show()
@@ -87,3 +102,4 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
         plt.savefig(plotPath)
         if saveJSONFile:
             saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
+

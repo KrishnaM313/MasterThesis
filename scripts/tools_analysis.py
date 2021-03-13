@@ -193,3 +193,4 @@ def countInSpeech(category: str, filePaths: list, plotsDir: str, startYear=None,
                 cnt[len(speech["text"])] += 1
 
     plot = plotCounterHistogram(cnt,category, plotsDir, startYear=startYear, endYear=endYear)
+
