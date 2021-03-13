@@ -8,6 +8,16 @@ from xml.etree import ElementTree as ET
 import pandas as pd
 from collections import Counter
 
+def getBaseDir():
+  environmentVariableName = "REPODIR"
+  if os.environ.get(environmentVariableName, False):
+    return os.environ.get(environmentVariableName)
+  else:
+    currentWorkingDirectory = os.path.abspath(os.getcwd())
+    print("To avoid this message please set environment variable REPODIR with the repo path")
+    path = str(input("Enter repository path or press Enter to use current working directory ("+currentWorkingDirectory+") : ") or currentWorkingDirectory)
+    os.environ[environmentVariableName] = path
+    return path
 
 def downlodFile(fileUrl,filePath):
   if os.path.isfile(filePath):
