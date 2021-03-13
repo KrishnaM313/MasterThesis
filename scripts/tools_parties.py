@@ -83,8 +83,7 @@ def getPartyIdeology(party):
         return "Non-Inscrits"
     elif party is None or party == "" or party == "None":
         return "na"
-    
-    return party
+
 
     # What is IND/DEM?
 
@@ -92,3 +91,23 @@ def getPartyIdeology(party):
     # https://www.europe-politique.eu/parlement-europeen.htm
 
     return party
+
+def getIdeologyID(ideology):
+    if ideology == "Left-wing":
+        return 1
+    elif ideology == "Social democrats":
+        return 2
+    elif ideology == "Greens and regionalists":
+        return 3
+    elif ideology == "Liberals and centrists":
+        return 4
+    elif ideology == "Christian democrats and conservatives":
+        return 5
+    elif ideology == "Eurosceptic conservatives":
+        return 6
+    elif ideology == "Far-right nationalists":
+        return 7
+    elif ideology == "Non-Inscrits":
+        return 8
+    else:
+        return 0

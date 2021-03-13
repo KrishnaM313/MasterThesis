@@ -7,6 +7,8 @@ from urllib.error import HTTPError
 from xml.etree import ElementTree as ET
 import pandas as pd
 from collections import Counter
+import time
+from datetime import datetime
 
 def getBaseDir():
   environmentVariableName = "REPODIR"
@@ -91,19 +93,23 @@ def download(type,filepath,fileurl,header=1):
     else:
         return "error"
 
-def extractDate(filename, year=False, month=False, day=False):
+def getDateInteger(year: int,month: int,day: int):
+  return year*10000 + month*100 + day
+
+def getDateString(year: int,month: int,day: int):
+  return "{year}-{month}-{day}".format(year=str(year),month=str(month),day=str(day))
+
+def extractDate(filename):
+  year, month, day = extractDateValues(filename)
+  return getDateString(year,month,day)
+
+def extractDateValues(filename):
   pFileName = re.compile(r'.*(\d{4})-(\d{2})-(\d{2})', flags=re.DOTALL)
   FilenameExtraction = pFileName.match(filename)
-  year = FilenameExtraction.group(1)
-  month = FilenameExtraction.group(2)
-  day = FilenameExtraction.group(3)
-  if year:
-    return year
-  elif month:
-    return month
-  if day:
-    return day
-  return "{year}-{month}-{day}".format(year=year,month=month,day=day)
+  year = int(FilenameExtraction.group(1))
+  month = int(FilenameExtraction.group(2))
+  day = int(FilenameExtraction.group(3))
+  return year, month, day
 
 
 def findDictKeyValue(dictionary,key):

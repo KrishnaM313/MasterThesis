@@ -2,7 +2,7 @@ from collections import Counter
 from numpy import array
 import pandas as pd
 from tools_parties import getParty
-from tools_data import extractDate, loadJSON, saveJSON, findDictKeyValue, addDictionaries
+from tools_data import extractDate, extractDateValues, loadJSON, saveJSON, findDictKeyValue, addDictionaries
 from tools_plot import plotCounterHistogram
 import os
 from tqdm import tqdm
@@ -181,7 +181,7 @@ def countInSpeech(category: str, filePaths: list, plotsDir: str, startYear=None,
     cnt = Counter()
     for filePath in tqdm(filePaths):
         if startYear is not None:
-            year = int(extractDate(filePath, year=True))
+            year, month, day = extractDateValues(filePath)
             if year < startYear or year > endYear:
                 continue
 
