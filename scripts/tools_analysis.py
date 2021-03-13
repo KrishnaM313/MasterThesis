@@ -1,8 +1,11 @@
 from collections import Counter
+from numpy import array
 import pandas as pd
 from tools_parties import getParty
 from tools_data import extractDate, loadJSON, saveJSON, findDictKeyValue, addDictionaries
+from tools_plot import plotCounterHistogram
 import os
+from tqdm import tqdm
 
 def countKeywords(text, keywordCategories):
     txtSplit = text.split()
@@ -174,3 +177,14 @@ def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
         response[key + "Missing"] = 1
     return response
 
+def countInSpeech(category: str, filePaths: list, plotsDir: str):
+    cnt = Counter()
+    for filePath in tqdm(filePaths):
+        file = loadJSON(filePath)
+        for speech in file:
+            if category == "word":
+                cnt[len(speech["text"].split())] += 1
+            elif category == "character":
+                cnt[len(speech["text"])] += 1
+
+    plot = plotCounterHistogram(cnt,category, plotsDir)

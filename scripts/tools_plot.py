@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.dates as dates
 from collections import Counter
 import matplotlib.pyplot as plt
+from tools_data import saveJSON
 
 
 def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False) -> plt:
@@ -61,18 +62,21 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     
     return plt
 
-def plotCounterHistogram(counter: Counter, saveFigDirectoryPath=None, showPlot=False):
+def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False):
+    plt.clf()
     labels, values = zip(*counter.items())
 
     indexes = np.arange(len(labels))
     width = 1
 
     plt.bar(indexes, values, width)
-    plt.title("Speeches Word Count")
+    plt.title(str.title("Speeches "+category+" Count"))
 
     if showPlot is True:
         plt.show()
 
     if saveFigDirectoryPath is not None:
-        plotPath = os.path.join(saveFigDirectoryPath,"text_length.png")
+        plotPath = os.path.join(saveFigDirectoryPath, "speeches_count_" + str.lower(category) + ".png")
         plt.savefig(plotPath)
+        if saveJSONFile:
+            saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, "speeches_count_" + str.lower(category) + ".json"))

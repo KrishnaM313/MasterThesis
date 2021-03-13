@@ -4,6 +4,7 @@ from fuzzy_match import algorithims
 import time
 from collections import Counter
 import matplotlib.pyplot as plt
+from tools_analysis import countInSpeech
 
 import re
 from tools_data import loadJSON, saveJSON, extractDate, getBaseDir
@@ -58,11 +59,10 @@ if __name__ == '__main__':
 
     count = 0
     result = {}
-    cnt = Counter()
-    for filePath in tqdm(filePaths):
-        file = loadJSON(filePath)
-        for speech in file:
-            cnt[len(speech["text"].split())] += 1
+    
+    countInSpeech("word", filePaths, plotsDir)
+    countInSpeech("character", filePaths, plotsDir)
 
-    plot = plotCounterHistogram(cnt, plotsDir)
+
+
 

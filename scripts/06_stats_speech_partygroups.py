@@ -2,13 +2,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from tools_data import getBaseDir
 from tools_parties import fixParty, getPartyIdeology
 from tqdm import tqdm
 from tools_plot import plotGraph
 
 if __name__ == '__main__':
 
-    baseDir = "/home/user/workspaces/MasterThesis/data"
+    repoDir = getBaseDir()
+    baseDir = os.path.join(repoDir,"data")
+    JSONDir = os.path.join(baseDir,"json")
+    JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
+    plotsDir = os.path.join(baseDir,"plots")
+
     analysisSummaryDir = os.path.join(baseDir,"analysisSummary")
 
     for category in ["climate", "health"]:
@@ -28,7 +34,7 @@ if __name__ == '__main__':
         df.sort_index(inplace=True)
 
         for key in ["fixedPoliticalGroup","politicalGroupIdeology"]:
-            plotGraph(df.copy(), category, key, analysisSummaryDir, 
+            plotGraph(df.copy(), category, key, plotsDir, 
             startYear=2018, dropNA=False, verbose=True)
         
         

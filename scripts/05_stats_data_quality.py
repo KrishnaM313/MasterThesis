@@ -34,11 +34,11 @@ count = 0
 
 if __name__ == '__main__':
 
-    baseDir = "/home/user/workspaces/MasterThesis/data"
-
-
+    repoDir = getBaseDir()
+    baseDir = os.path.join(repoDir,"data")
     JSONDir = os.path.join(baseDir,"json")
     JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
+    plotsDir = os.path.join(baseDir,"plots")
 
 
     analysisDir = os.path.join(baseDir,"analysis")
