@@ -177,9 +177,14 @@ def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
         response[key + "Missing"] = 1
     return response
 
-def countInSpeech(category: str, filePaths: list, plotsDir: str):
+def countInSpeech(category: str, filePaths: list, plotsDir: str, startYear=None, endYear=None):
     cnt = Counter()
     for filePath in tqdm(filePaths):
+        if startYear is not None:
+            year = int(extractDate(filePath, year=True))
+            if year < startYear or year > endYear:
+                continue
+
         file = loadJSON(filePath)
         for speech in file:
             if category == "word":
@@ -187,4 +192,4 @@ def countInSpeech(category: str, filePaths: list, plotsDir: str):
             elif category == "character":
                 cnt[len(speech["text"])] += 1
 
-    plot = plotCounterHistogram(cnt,category, plotsDir)
+    plot = plotCounterHistogram(cnt,category, plotsDir, startYear=startYear, endYear=endYear)

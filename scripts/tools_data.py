@@ -91,12 +91,18 @@ def download(type,filepath,fileurl,header=1):
     else:
         return "error"
 
-def extractDate(filename):
+def extractDate(filename, year=False, month=False, day=False):
   pFileName = re.compile(r'.*(\d{4})-(\d{2})-(\d{2})', flags=re.DOTALL)
   FilenameExtraction = pFileName.match(filename)
   year = FilenameExtraction.group(1)
   month = FilenameExtraction.group(2)
   day = FilenameExtraction.group(3)
+  if year:
+    return year
+  elif month:
+    return month
+  if day:
+    return day
   return "{year}-{month}-{day}".format(year=year,month=month,day=day)
 
 

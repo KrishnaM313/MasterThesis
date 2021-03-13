@@ -60,8 +60,11 @@ if __name__ == '__main__':
     count = 0
     result = {}
     
+
     countInSpeech("word", filePaths, plotsDir)
     countInSpeech("character", filePaths, plotsDir)
+    countInSpeech("word", filePaths, plotsDir, 2018,2021)
+    countInSpeech("character", filePaths, plotsDir, 2018,2021)
 
 
 

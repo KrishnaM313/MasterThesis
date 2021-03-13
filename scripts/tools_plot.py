@@ -62,7 +62,7 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     
     return plt
 
-def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False):
+def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None):
     plt.clf()
     labels, values = zip(*counter.items())
 
@@ -70,13 +70,20 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
     width = 1
 
     plt.bar(indexes, values, width)
-    plt.title(str.title("Speeches "+category+" Count"))
+    title = "Speeches "+category+" Count"
+    if startYear is not None:
+        title = title + " " + str(startYear) + "-" +  str(endYear)
+    plt.title(title)
 
     if showPlot is True:
         plt.show()
 
     if saveFigDirectoryPath is not None:
-        plotPath = os.path.join(saveFigDirectoryPath, "speeches_count_" + str.lower(category) + ".png")
+        filename = "speeches_count_" + str.lower(category)
+        if startYear is not None:
+            filename = filename + "_" + str(startYear) + "_" + str(endYear)
+
+        plotPath = os.path.join(saveFigDirectoryPath, filename + ".png")
         plt.savefig(plotPath)
         if saveJSONFile:
-            saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, "speeches_count_" + str.lower(category) + ".json"))
+            saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
