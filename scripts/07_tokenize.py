@@ -8,7 +8,7 @@ import torch
 if __name__ == '__main__':
 
 
-    small = True
+    small = False
 
     repoDir = getBaseDir()
     baseDir = os.path.join(repoDir,"data")

@@ -98,8 +98,9 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
         if startYear is not None:
             filename = filename + "_" + str(startYear) + "_" + str(endYear)
 
-        plotPath = os.path.join(saveFigDirectoryPath, filename + ".png")
-        plt.savefig(plotPath)
+        plotPath = os.path.join(saveFigDirectoryPath, filename)
+        plt.savefig(plotPath+".png")
+        plt.savefig(plotPath+".svg", bbox_inches='tight')
         if saveJSONFile:
             saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
 

@@ -27,49 +27,14 @@ if __name__ == '__main__':
 
     labels_path = os.path.join(embeddingsDir,"labels"+postfix)
     labels = torch.load(labels_path)
-
     
-    
-    
-    #exit()
-    #print(tokens)
-
-
-    
-    dataset = BertDataset(tokens, labels)
-    #dataset = dataset.map(tokens, batched=True)
-    #print(dataset)
-    #exit()
-
-    # dataset = TensorDataset(
-    #             tokens['input_ids'],
-    #             labels
-    #              )
-    #                                tokens['attention_mask'],
-                #tokens['token_type_ids'],
-    #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
-    #print(tokens)
-    loader = DataLoader(dataset, batch_size= 3)
-
-    
-    # Quick test
-    #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
-    #print(dataset)
-    # The DataLoader needs to know our batch size for training, so we specify it 
-    # here.
-    # For fine-tuning BERT on a specific task, the authors recommend a batch size of
-    # 16 or 32.
-    batchSize = 2 #32
-    # Create the DataLoader for our training set.
-    #print(dataset)
-    #exit()
-
     seed = 42
-
-    #random.seed(seed)
-    #np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+
+    dataset = BertDataset(tokens, labels)
+
+    batchSize = 32
 
     lengths = getDataSplitSizes(dataset)
 
@@ -88,41 +53,19 @@ if __name__ == '__main__':
     valSampler = RandomSampler(valData)
     valDataloader = DataLoader(valData, sampler=valSampler, batch_size=batchSize)
 
-
-    print(next(iter(trainDataloader)))
-    exit()
-
-    #tensorHeight = 25
-    #tensorLength = 20
-    #tensorSize = tensorHeight*tensorLength
-
-    #dates_path = os.path.join(embeddingsDir,"dates"+postfix)
-    #dates = torch.tensor(dates_path)
-
-    # https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
-
     model = BertForSequenceClassification.from_pretrained(
                                     'bert-base-uncased',
                                     num_labels = 9,
                                     output_attentions = False,
                                     output_hidden_states = False)
 
-    #from torchsummaryX import summary
-    #print(summary(model, trainData))
-    #exit()
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.train().to(device)
     optimizer = torch.optim.AdamW(params=model.parameters(), lr=1e-5)
     for epoch in range(3):
         for i, batch in enumerate(tqdm(trainDataloader)):
-            #print(batch)
-            #exit()
-            #batch = {k: v.to(device) for k, v in batch.items()}
-            #print(batch)
-            #exit()
             outputs = model(**batch)
-            print(outputs)
-            exit()
             loss = outputs[0]
             loss.backward()
             optimizer.step()

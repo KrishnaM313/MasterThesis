@@ -9,7 +9,7 @@ def getDataSplitSizes(dataset: TensorDataset):
     train = floor(total*0.8)
     test = floor(total*0.15)
     val = total - train - test
-    print("Dataset got split: {} Training, {} Testing & {} Validation Sub-dataset".format(train,test,val))
+    print("Dataset got split: {} Training, {} Testing & {} Validation Sub-dataset of total {}".format(train,test,val,total))
     return [train, test, val]
   #tokens['token_type_ids'],
     #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
@@ -26,12 +26,22 @@ class BertDataset(Dataset):
         
     def __getitem__(self, index):
         # Load actual image here
-        x = self.features[index]
+        #x = self.features['input_ids'][index]
+        #exit()
+        return {
+            'input_ids' : self.features['input_ids'][index],
+            'token_type_ids' : self.features['token_type_ids'][index],
+            'attention_mask' : self.features['attention_mask'][index],
+            'labels' : self.labels[index]
+        }
+        
+        #x = self.features[index]
         #x = self.features[index]
         #if self.transform:
         #    x = self.transform(x)
-        y = self.labels[index]
-        return x, y
+        #y = self.labels[index]
+        #return x, y
+        #return x,y
     
     def __len__(self):
-        return len(self.features)
+        return len(self.features['input_ids'])
