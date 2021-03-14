@@ -1,4 +1,4 @@
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, BertForSequenceClassification
 from tools_data import getBaseDir, extractDate, extractDateValues, loadJSON, getDateString, getDateInteger
 from tools_parties import getIdeologyID
 from tqdm import tqdm
@@ -8,7 +8,7 @@ import torch
 if __name__ == '__main__':
 
 
-    small = False
+    small = True
 
     repoDir = getBaseDir()
     baseDir = os.path.join(repoDir,"data")
@@ -35,7 +35,8 @@ if __name__ == '__main__':
     #model = DistilBertModel.from_pretrained("distilbert-base-uncased")
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased') #bert-large-cased
-    model = BertModel.from_pretrained("bert-base-uncased")
+    #model = BertModel.from_pretrained("bert-base-uncased")
+
 
 
     tensorHeight = 25
@@ -43,8 +44,11 @@ if __name__ == '__main__':
     tensorSize = tensorHeight*tensorLength
 
     dates = []
-    texts = []
+    tokens = []
     labels = []
+
+    texts = []
+
     for filePath in tqdm(filePaths):
 
         year, month, day = extractDateValues(filePath)
@@ -55,16 +59,29 @@ if __name__ == '__main__':
         
         JSONfile = loadJSON(filePath)
 
+
+
         #count = 0
         for speech in JSONfile:
             #count += 1
             #if (count > 10):
             #    break
             dates += [getDateInteger(year,month,day)]
-            encodedInput = tokenizer.encode(speech["text"], verbose=True, padding="max_length", max_length=tensorSize, truncation=True,  return_tensors='pt')
-            encodedMatrix = encodedInput.reshape(tensorHeight,tensorLength)
-            texts += [torch.unsqueeze(encodedMatrix, 0)]
-            #labels += [getIdeologyID(speech["partyIdeology"])]
+            #encodedInput = tokenizer(speech["text"], verbose=True, padding="max_length", max_length=tensorSize, truncation=True,  return_tensors='pt')
+            #encodedMatrix = encodedInput.reshape(tensorHeight,tensorLength)
+            texts += [speech["text"]]
+            #tokens += [encodedInput]
+            #labels = torch.tensor([1]).unsqueeze(0)  # Batch size 1
+            #outputs = model(**encodedInput, labels=labels)
+            #loss = outputs.loss
+            #logits = outputs.logits
+            #print(tokens)
+            #print(outputs)
+            #print(loss)
+            #print(logits)
+            #exit()
+            #texts += [torch.unsqueeze(encodedMatrix, 0)]
+            labels += [getIdeologyID(speech["partyIdeology"])]
 
             #print(encoded_input)
             #exit()
@@ -84,18 +101,14 @@ if __name__ == '__main__':
 
         #encoded_input = tokenizer(texts, verbose=True, padding="max_length", max_length=512, truncation=True,  return_tensors='pt')
         #output = model(**encoded_input)
-    tensor = torch.Tensor(len(texts), tensorHeight,tensorLength)
-    torch.cat(texts, out=tensor)
-    print(tensor)
-    print(type(tensor))
-    print(len(texts))
-    print(tensor.size())
+    tokens = tokenizer.batch_encode_plus(texts, verbose=True, padding="max_length", max_length=tensorSize, truncation=True,  return_tensors='pt')
+    tokens['labels'] = torch.tensor(labels, dtype=torch.int32)
 
     postfix = ""
     if small:
         postfix = "_small"
 
-    torch.save(tensor, os.path.join(embeddingsDir,"texts"+postfix))
+    torch.save(tokens, os.path.join(embeddingsDir,"tokens"+postfix))
     torch.save(torch.tensor(dates), os.path.join(embeddingsDir,"dates"+postfix))
     torch.save(torch.tensor(labels), os.path.join(embeddingsDir,"labels"+postfix))
     #print(output)
