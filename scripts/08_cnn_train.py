@@ -21,13 +21,14 @@ if __name__ == '__main__':
     baseDir = os.path.join(repoDir,"data")
     JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
     embeddingsDir = os.path.join(baseDir,"embeddings")
+    modelsDir = os.path.join(baseDir,"models")
 
     tokens_path = os.path.join(embeddingsDir,"tokens"+postfix)
     tokens = torch.load(tokens_path)
 
     labels_path = os.path.join(embeddingsDir,"labels"+postfix)
     labels = torch.load(labels_path)
-    
+
     seed = 42
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -42,7 +43,7 @@ if __name__ == '__main__':
                                             dataset,
                                             lengths, 
                                             generator=torch.Generator().manual_seed(seed))
-    
+
 
     trainSampler = RandomSampler(trainData)
     trainDataloader = DataLoader(trainData, sampler=trainSampler, batch_size=batchSize)
@@ -72,6 +73,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             if i % 10 == 0:
                 print(f"loss: {loss}")
+        torch.save(model.state_dict(), os.path.join(modelsDir,"model_epoch"+str(epoch)+postfix))
 
     exit()
 
