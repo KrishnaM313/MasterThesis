@@ -8,272 +8,255 @@ import numpy as np
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler, DataLoader, TensorDataset, random_split
 from torch import Tensor
 import math
-from tools_dataset import getDataSplitSizes, BertDataset
+from tools_dataset import getDataSplitSizes, BertDataset, getDataSplitIndices
 from tqdm import tqdm
 from datasets import Dataset
-
+import mlflow
+from azureml.core import Run
+import argparse
+# from pytorch_lightning.loggers import MLFlowLogger
+# from torch.nn import functional as F
 
 if __name__ == '__main__':
 
-    postfix = "_small"
+    torch.cuda.empty_cache()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-path",
+        type=str,
+        help="Path to the training data"
+    )
+    parser.add_argument(
+        "--pretrained-model",
+        type=str,
+        help="Path to the pretrained model to avoid download"
+    )
+    parser.add_argument(
+        "--category",
+        type=str,
+        help="Which dictionary should be used to determine which speeches are included. just determines the filename picked. No processing.",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=0.001,
+        help="Learning rate",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=8,
+        help="Batch size for learning",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=int,
+        default=1,
+        help="How many words have to be included from the dictionary for the speech to be included. just determines the filename picked. No processing.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="seed for randomization",
+    )
+    parser.add_argument(
+        '--big',
+        default=False,
+        action='store_true',
+        help="should small or big dataset be used for training",
+    )
+#    parser.add_argument(
+#      "--momentum",
+#      type=float,
+#      default=0.9,
+#      help="Momentum for SGD"
+#    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=15,
+        help="Number of epochs to train"
+    )
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default="./outputs",
+        help='output directory'
+    )
 
-    repoDir = getBaseDir()
-    baseDir = os.path.join(repoDir,"data")
-    JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
-    embeddingsDir = os.path.join(baseDir,"embeddings")
-    modelsDir = os.path.join(baseDir,"models")
+    args = parser.parse_args()
 
-    tokens_path = os.path.join(embeddingsDir,"tokens"+postfix)
+    print("===== DATA =====")
+    print("DATA PATH: " + args.data_path)
+    print("LIST FILES IN DATA PATH...")
+    print(os.listdir(args.data_path))
+    print("================")
+
+    run = Run.get_context()
+
+    postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
+
+    tokens_path = os.path.join(args.data_path, "tokens"+postfix)
     tokens = torch.load(tokens_path)
 
-    labels_path = os.path.join(embeddingsDir,"labels"+postfix)
+    labels_path = os.path.join(args.data_path, "labels"+postfix)
     labels = torch.load(labels_path)
 
-    seed = 42
+    seed = args.seed
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
     dataset = BertDataset(tokens, labels)
 
-    batchSize = 32
+    batchSize = args.batch_size
 
-    lengths = getDataSplitSizes(dataset)
+    # lengths = getDataSplitSizes(dataset)
 
-    trainData, testData, valData = random_split(
-                                            dataset,
-                                            lengths, 
-                                            generator=torch.Generator().manual_seed(seed))
+    splitIndices = getDataSplitIndices(dataset)
 
+    trainData = torch.utils.data.Subset(dataset, splitIndices['train'])
+    testData = torch.utils.data.Subset(dataset, splitIndices['test'])
+    valData = torch.utils.data.Subset(dataset, splitIndices['validation'])
 
     trainSampler = RandomSampler(trainData)
-    trainDataloader = DataLoader(trainData, sampler=trainSampler, batch_size=batchSize)
+    trainDataloader = DataLoader(
+        trainData, sampler=trainSampler, batch_size=batchSize)
 
     testSampler = RandomSampler(testData)
-    testDataloader = DataLoader(testData, sampler=testSampler, batch_size=batchSize)
+    testDataloader = DataLoader(
+        testData, sampler=testSampler, batch_size=batchSize)
 
     valSampler = RandomSampler(valData)
-    valDataloader = DataLoader(valData, sampler=valSampler, batch_size=batchSize)
+    valDataloader = DataLoader(
+        valData, sampler=valSampler, batch_size=batchSize)
 
+    # 'bert-base-uncased'
     model = BertForSequenceClassification.from_pretrained(
-                                    'bert-base-uncased',
-                                    num_labels = 9,
-                                    output_attentions = False,
-                                    output_hidden_states = False)
+        args.pretrained_model,
+        num_labels=9,
+        output_attentions=False,
+        output_hidden_states=False)
 
-
+    print(torch.cuda.memory_allocated()/1024**2)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print("push model")
+    print(torch.cuda.memory_allocated()/1024**2)
     model.train().to(device)
-    optimizer = torch.optim.AdamW(params=model.parameters(), lr=1e-5)
-    for epoch in range(3):
+    print(torch.cuda.memory_allocated()/1024**2)
+    optimizer = torch.optim.AdamW(
+        params=model.parameters(), lr=args.learning_rate)
+    print(torch.cuda.memory_allocated()/1024**2)
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    train_loss = 0.0
+    train_count = 0
+    test_loss = 0.0
+    test_count = 0
+
+    for epoch in range(args.epochs):
+
+                    correct = 0
+            total = 0
+            outputs_epoch = []
+            labels_epoch = []
+            predicted_epoch = []
+            running_acc = 0.
+            running_loss = 0.
+
         for i, batch in enumerate(tqdm(trainDataloader)):
-            outputs = model(**batch)
+            print(torch.cuda.memory_allocated()/1024**2)
+            input_ids = batch["input_ids"]
+            input_ids = input_ids.to(device)
+
+            token_type_ids = batch["token_type_ids"]
+            token_type_ids = token_type_ids.to(device)
+
+            attention_mask = batch["attention_mask"]
+            attention_mask = attention_mask.to(device)
+
+            labels = batch["labels"]
+            labels = labels.to(device)
+
+            # del batch
+            outputs = model(
+                input_ids=input_ids,
+                token_type_ids=token_type_ids,
+                attention_mask=attention_mask,
+                labels=labels
+            )  # **batch
+
+            # loss = loss_fn(outputs, labels)
+
+            del input_ids
+            del token_type_ids
+            del attention_mask
+            del labels
+
             loss = outputs[0]
-            loss.backward()
-            optimizer.step()
+            # loss = F.cross_entropy(outputs.logits, labels)
             optimizer.zero_grad()
-            if i % 10 == 0:
-                print(f"loss: {loss}")
-        torch.save(model.state_dict(), os.path.join(modelsDir,"model_epoch"+str(epoch)+postfix))
-
-    exit()
-
-                                 
-    params = list(model.named_parameters())
-    print('The BERT model has {:} different named parameters.\n'.format(len(params)))
-    print('==== Embedding Layer ====\n')
-    for p in params[0:5]:
-        print("{:<55} {:>12}".format(p[0], str(tuple(p[1].size()))))
-    print('\n==== First Transformer ====\n')
-    for p in params[5:21]:
-        print("{:<55} {:>12}".format(p[0], str(tuple(p[1].size()))))
-    print('\n==== Output Layer ====\n')
-    for p in params[-4:]:
-        print("{:<55} {:>12}".format(p[0], str(tuple(p[1].size()))))
-    #print(params)
-
-
-    # Note: AdamW is a class from the huggingface library (as opposed to pytorch) 
-    # I believe the 'W' stands for 'Weight Decay fix"
-    optimizer = AdamW(model.parameters(),
-                    lr = 2e-5, # args.learning_rate - default is 5e-5, our notebook had 2e-5
-                    eps = 1e-8 # args.adam_epsilon  - default is 1e-8.
-                    )
-    from transformers import get_linear_schedule_with_warmup
-    # Number of training epochs (authors recommend between 2 and 4)
-    epochs = 4
-    # Total number of training steps is number of batches * number of epochs.
-    #total_steps = len(train_dataloader) * epochs
-    # Create the learning rate scheduler.
-    scheduler = get_linear_schedule_with_warmup(optimizer, 
-                                                num_warmup_steps = 0, # Default value in run_glue.py
-                                                num_training_steps = 5)#total_steps
-
-
-    
-    # This training code is based on the `run_glue.py` script here:
-    # https://github.com/huggingface/transformers/blob/5bfcd0485ece086ebcbed2d008813037968a9e58/examples/run_glue.py#L128
-    # Set the seed value all over the place to make this reproducible.
- 
-    # Store the average loss after each epoch so we can plot them.
-    loss_values = []
-    # For each epoch...
-    for epoch_i in range(0, epochs):
-        
-        # ========================================
-        #               Training
-        # ========================================
-        
-        # Perform one full pass over the training set.
-        print("")
-        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
-        print('Training...')
-        # Measure how long the training epoch takes.
-        t0 = time.time()
-        # Reset the total loss for this epoch.
-        total_loss = 0
-        # Put the model into training mode. Don't be mislead--the call to 
-        # `train` just changes the *mode*, it doesn't *perform* the training.
-        # `dropout` and `batchnorm` layers behave differently during training
-        # vs. test (source: https://stackoverflow.com/questions/51433378/what-does-model-train-do-in-pytorch)
-        model.train()
-        # For each batch of training data...
-        for step, batch in enumerate(train_dataloader):
-            # Progress update every 40 batches.
-            if step % 40 == 0 and not step == 0:
-                # Calculate elapsed time in minutes.
-                elapsed = format_time(time.time() - t0)
-                
-                # Report progress.
-                print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
-            # Unpack this training batch from our dataloader. 
-            #
-            # As we unpack the batch, we'll also copy each tensor to the GPU using the 
-            # `to` method.
-            #
-            # `batch` contains three pytorch tensors:
-            #   [0]: input ids 
-            #   [1]: attention masks
-            #   [2]: labels 
-            b_input_ids = batch[0].to(device)
-            b_input_mask = batch[1].to(device)
-            b_labels = batch[2].to(device)
-            # Always clear any previously calculated gradients before performing a
-            # backward pass. PyTorch doesn't do this automatically because 
-            # accumulating the gradients is "convenient while training RNNs". 
-            # (source: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch)
-            model.zero_grad()        
-            # Perform a forward pass (evaluate the model on this training batch).
-            # This will return the loss (rather than the model output) because we
-            # have provided the `labels`.
-            # The documentation for this `model` function is here: 
-            # https://huggingface.co/transformers/v2.2.0/model_doc/bert.html#transformers.BertForSequenceClassification
-            outputs = model(b_input_ids, 
-                        token_type_ids=None, 
-                        attention_mask=b_input_mask, 
-                        labels=b_labels)
-            
-            # The call to `model` always returns a tuple, so we need to pull the 
-            # loss value out of the tuple.
-            loss = outputs[0]
-            # Accumulate the training loss over all of the batches so that we can
-            # calculate the average loss at the end. `loss` is a Tensor containing a
-            # single value; the `.item()` function just returns the Python value 
-            # from the tensor.
-            total_loss += loss.item()
-            # Perform a backward pass to calculate the gradients.
             loss.backward()
-            # Clip the norm of the gradients to 1.0.
-            # This is to help prevent the "exploding gradients" problem.
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            # Update parameters and take a step using the computed gradient.
-            # The optimizer dictates the "update rule"--how the parameters are
-            # modified based on their gradients, the learning rate, etc.
             optimizer.step()
-            # Update the learning rate.
-            scheduler.step()
-        # Calculate the average loss over the training data.
-        avg_train_loss = total_loss / len(train_dataloader)            
-        
-        # Store the loss value for plotting the learning curve.
-        loss_values.append(avg_train_loss)
-        print("")
-        print("  Average training loss: {0:.2f}".format(avg_train_loss))
-        print("  Training epcoh took: {:}".format(format_time(time.time() - t0)))
-            
-        # ========================================
-        #               Validation
-        # ========================================
-        # After the completion of each training epoch, measure our performance on
-        # our validation set.
-        print("")
-        print("Running Validation...")
-        t0 = time.time()
-        # Put the model in evaluation mode--the dropout layers behave differently
-        # during evaluation.
-        model.eval()
-        # Tracking variables 
-        eval_loss, eval_accuracy = 0, 0
-        nb_eval_steps, nb_eval_examples = 0, 0
-        # Evaluate data for one epoch
-        for batch in validation_dataloader:
-            
-            # Add batch to GPU
-            batch = tuple(t.to(device) for t in batch)
-            
-            # Unpack the inputs from our dataloader
-            b_input_ids, b_input_mask, b_labels = batch
-            
-            # Telling the model not to compute or store gradients, saving memory and
-            # speeding up validation
-            with torch.no_grad():        
-                # Forward pass, calculate logit predictions.
-                # This will return the logits rather than the loss because we have
-                # not provided labels.
-                # token_type_ids is the same as the "segment ids", which 
-                # differentiates sentence 1 and 2 in 2-sentence tasks.
-                # The documentation for this `model` function is here: 
-                # https://huggingface.co/transformers/v2.2.0/model_doc/bert.html#transformers.BertForSequenceClassification
-                outputs = model(b_input_ids, 
-                                token_type_ids=None, 
-                                attention_mask=b_input_mask)
-            
-            # Get the "logits" output by the model. The "logits" are the output
-            # values prior to applying an activation function like the softmax.
-            logits = outputs[0]
-            # Move logits and labels to CPU
-            logits = logits.detach().cpu().numpy()
-            label_ids = b_labels.to('cpu').numpy()
-            
-            # Calculate the accuracy for this batch of test sentences.
-            tmp_eval_accuracy = flat_accuracy(logits, label_ids)
-            
-            # Accumulate the total accuracy.
-            eval_accuracy += tmp_eval_accuracy
-            # Track the number of batches
-            nb_eval_steps += 1
-        # Report the final accuracy for this validation run.
-        print("  Accuracy: {0:.2f}".format(eval_accuracy/nb_eval_steps))
-        print("  Validation took: {:}".format(format_time(time.time() - t0)))
-    print("")
-    print("Training complete!")
-    exit()
-    model = FintunedModel(pretrainedModel,8)
-    print(model.eval())
-    exit()
-    
-    #model.eval()
 
-    #https://pypi.org/project/pytorch-pretrained-bert/#notebooks
+            if i % 10 == 0:
+                # mlf_logger.log_metric("loss", loss)
+                run.log('loss', outputs[0].item())
+                print(
+                    f"epoch={epoch + 1}, batch={i + 1:5}: loss {outputs[0].item():.2f}")
+            train_loss += outputs[0]
+            train_count += 1
+        torch.save(model.state_dict(), os.path.join(
+            args.output_dir, "model_epoch"+str(epoch)+postfix))
+    model.eval()  # prep model for evaluation
+    for i, batch in enumerate(tqdm(testDataloader)):
+        # forward pass: compute predicted outputs by passing inputs to the model
 
-    # If you have a GPU, put everything on cuda
-    
-    #tensors = tensors.to('cuda')
-    #segments_tensors = tensors.to('cuda')
-    #model.to('cuda')
+        input_ids = batch["input_ids"]
+        input_ids = input_ids.to(device)
 
+        token_type_ids = batch["token_type_ids"]
+        token_type_ids = token_type_ids.to(device)
 
-    # Predict hidden states features for each layer
-    with torch.no_grad():
-        encoded_layers, _ = model(inputs_embeds=tensors[0])
-    # We have a hidden states for each of the 12 layers in model bert-base-uncased
-    assert len(encoded_layers) == 12
+        attention_mask = batch["attention_mask"]
+        attention_mask = attention_mask.to(device)
+
+        labels = batch["labels"]
+        labels = labels.to(device)
+
+        outputs = model(
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+            attention_mask=attention_mask,
+            labels=labels)
+
+        # calculate the loss
+        # print(outputs)
+        # loss =
+        # loss = loss_fn(output, labels)
+
+        del input_ids
+        del token_type_ids
+        del attention_mask
+        del labels
+
+        # update running validation loss
+        test_loss += outputs[0]
+        test_count += 1
+
+    # print training/validation statistics
+    # calculate average loss over an epoch
+    train_loss = train_loss/train_count  # len(trainDataloader)
+    run.log('avg_train_loss', train_loss.item())
+    test_loss = test_loss/test_count  # len(testDataloader)
+    run.log('avg_test_loss', test_loss.item())
+    # model.eval()
+    # y_pred = model(testX)
+    # test_loss = criterion(y_pred, testY)
+    # print('test loss is {}'.format(test_loss))
+    # model_file_name = 'model.pkl'.format(alpha)
+    # with open(model, "wb") as file:
+    #    joblib.dump(value=reg, filename=os.path.join('./outputs/',
+    # model_file_name))
+    print("Finished Training")
