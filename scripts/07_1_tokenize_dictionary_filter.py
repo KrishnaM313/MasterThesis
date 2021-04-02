@@ -48,18 +48,21 @@ if __name__ == '__main__':
     thresholds = [1, 2, 3]
 
     # Setup dictionary that will contain all relevant speeches
-    dates = {}
-    labels = {}
-    texts = {}
 
-    for keywordCategory in keywords:
-        dates[keywordCategory] = []
-        labels[keywordCategory] = []
-        texts[keywordCategory] = []
 
     # Trying out different thresholds: how many words have to be in the climate dictionary
     # to put this speech in the climate dataset
     for threshold in thresholds:
+
+        # Setup empty dictionaries
+        dates = {}
+        labels = {}
+        texts = {}
+        for keywordCategory in keywords:
+            dates[keywordCategory] = []
+            labels[keywordCategory] = []
+            texts[keywordCategory] = []
+
         print("Creating tensor for threshold %s" % threshold)
         # going through all the json files
         print("Processing %s JSON files" % len(filePaths))
