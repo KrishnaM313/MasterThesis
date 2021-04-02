@@ -5,10 +5,11 @@ import time
 
 
 import re
-from tools_data import loadJSON, saveJSON, extractDate
+from tools_logging import prettyPrint
+from tools_data import loadJSON, saveJSON, extractDate, getBaseDir
 from tools_parties import extractFromName, getParty
 from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
-from tools_analysis import getDataFrames, appendAnalysis, doKeywordAnalysis, doFileAnalysis, analyseFile, analyseFileQuality, addDictionaries
+from tools_analysis import getDataFrames, appendAnalysis, doKeywordAnalysis, doFileAnalysis, analyseFile, analyseFileQuality, addDictionaries, addPercentage
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
@@ -63,18 +64,13 @@ if __name__ == '__main__':
 
         response = analyseFileQuality(file)
         result = addDictionaries(response, result)
+        
+    result = addPercentage(result)
+    prettyPrint(result)
 
-    print(result)
 
-
-    # Parallel(n_jobs=-1)(
-    #     delayed(analyseFile)(file) for file in tqdm(filePaths)
-    # )
-
-    
-    analysisDir = os.path.join(baseDir,"analysis")
-    analysisSummaryDir = os.path.join(baseDir,"analysisSummary")
-    if not os.path.isdir(analysisSummaryDir):
-        os.mkdir(analysisSummaryDir)
-    # climate
-
+    statsDir = os.path.join(baseDir,"stats")
+    statsFile = os.path.join(statsDir, "data_quality.json")
+    if not os.path.isdir(statsDir):
+        os.mkdir(statsDir)
+    saveJSON(result, statsFile, verbose=True)

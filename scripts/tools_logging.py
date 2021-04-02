@@ -1,4 +1,8 @@
 from sklearn.metrics import multilabel_confusion_matrix
+import json
+
+def prettyPrint(json_string: str):
+    print(json.dumps(json_string, indent=4))
 
 def logValues(run, result: dict):
     # result = {
@@ -14,8 +18,6 @@ def logValues(run, result: dict):
     keys = ["epoch", "correct", "total", "accuracy"]
     for key in keys:
         run.log(key, result[key])
-
-
 
 def logConfusionMatrix(run, labels_epoch, predicted_epoch, labels=None, labelsRange=9, verbose=False):
     if verbose:

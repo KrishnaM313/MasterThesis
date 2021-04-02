@@ -160,14 +160,25 @@ def analyseFileQuality(filePath,verbose=False):
 
     result = {}
 
+    result
+
     for n,speech in enumerate(data):
         response = {}
         response = updateDataQualityResponse(speech,response,"politicalGroup")
         response = updateDataQualityResponse(speech,response,"mepid")
         response = updateDataQualityResponse(speech,response,"name")
+        response["total"] = 1
         result = addDictionaries(response, result)
-
     return result
+
+def addPercentage(dictionary: dict):
+    percentageDictionary = {}
+    for key in dictionary:
+        percentageDictionary[key] = dictionary[key]
+        if key == "total":
+            continue
+        percentageDictionary[key+"_percentage"] = int(dictionary[key]/dictionary["total"]*100)
+    return percentageDictionary
 
 def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
     err, politicalGroup = findDictKeyValue(data,key)

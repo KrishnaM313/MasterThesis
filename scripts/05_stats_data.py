@@ -5,7 +5,7 @@ import time
 
 
 import re
-from tools_data import loadJSON, saveJSON, extractDate
+from tools_data import loadJSON, saveJSON, extractDate, getBaseDir
 from tools_parties import extractFromName, getParty
 from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
 from tools_analysis import getDataFrames, appendAnalysis, doKeywordAnalysis, doFileAnalysis, analyseFile
