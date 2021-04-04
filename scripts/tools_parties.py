@@ -1,4 +1,5 @@
 import re
+from tools_data import saveJSON
 
 def extractFromName(name):
     # extracts party name from brackets in name
@@ -61,31 +62,36 @@ def fixParty(party):
     
     return party
 
+def getPartyIdeologyAssociations():
+    return {
+        "Left-wing" : ["GUE/NGL", "The Left"],
+        "Social democrats" : ["S&D"],
+        "Greens and regionalists": ["Verts/ALE"],
+        "Liberals and centrists": ["ALDE", "ELDR", "Renew", "LDR"],
+        "Christian democrats and conservatives" : ["PPE", "ECR", "RDE"],
+        "Eurosceptic conservatives": ["EFDD","IND/DEM"],
+        "Far-right nationalists": ["ID", "ENF"],
+        "Non-Inscrits": ["NI"]
+    }
+
+def savePartyIdeologyAssociations(filepath):
+    saveJSON(getPartyIdeologyAssociations(),filepath)
+
+savePartyIdeologyAssociations('/Users/michael/workspaces/MasterThesis/data/stats/party_associations.json')
+
+
 def getPartyIdeology(party):
     if isinstance(party, str):
         party = party.strip()
 
-    if party in ["GUE/NGL", "The Left"]:
-        return "Left-wing"
-    elif party in ["S&D"]:
-        return "Social democrats"
-    elif party in ["Verts/ALE"]:
-        return "Greens and regionalists"
-    elif party in ["ALDE", "ELDR", "Renew", "LDR"]:
-        return "Liberals and centrists"
-    elif party in ["PPE", "ECR", "RDE"]:
-        return "Christian democrats and conservatives"
-    elif party in ["EFDD","IND/DEM"]:
-        return "Eurosceptic conservatives"
-    elif party in ["ID", "ENF"]:
-        return "Far-right nationalists"
-    elif party in ["NI"]:
-        return "Non-Inscrits"
-    elif party is None or party == "" or party == "None":
-        return "na"
-
-
-    # What is IND/DEM?
+    ideologies =  getPartyIdeologyAssociations()
+    associatedIdeology = None
+    for ideology in ideologies:
+        if party in ideologies[ideology]:
+            associatedIdeology = ideology
+    if associatedIdeology is None:
+        associatedIdeology = "na"
+    return associatedIdeology
 
     # https://en.wikipedia.org/wiki/European_Parliament
     # https://www.europe-politique.eu/parlement-europeen.htm

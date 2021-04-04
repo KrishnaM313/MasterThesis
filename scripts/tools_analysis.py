@@ -6,6 +6,7 @@ from tools_data import extractDate, extractDateValues, loadJSON, saveJSON, findD
 from tools_plot import plotCounterHistogram
 import os
 from tqdm import tqdm
+from tools_stats import addPercentage
 
 def countKeywords(text, keywordCategories):
     txtSplit = text.split()
@@ -170,15 +171,6 @@ def analyseFileQuality(filePath,verbose=False):
         response["total"] = 1
         result = addDictionaries(response, result)
     return result
-
-def addPercentage(dictionary: dict):
-    percentageDictionary = {}
-    for key in dictionary:
-        percentageDictionary[key] = dictionary[key]
-        if key == "total":
-            continue
-        percentageDictionary[key+"_percentage"] = int(dictionary[key]/dictionary["total"]*100)
-    return percentageDictionary
 
 def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
     err, politicalGroup = findDictKeyValue(data,key)

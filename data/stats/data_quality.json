@@ -1,1 +1,11 @@
-{"politicalGroupExists": 223480, "politicalGroupExists_percentage": 92, "mepidExists": 242782, "mepidExists_percentage": 100, "nameExists": 242782, "nameExists_percentage": 100, "total": 242782, "politicalGroupMissing": 19302, "politicalGroupMissing_percentage": 7}
+{
+    "politicalGroupExists": 223480,
+    "politicalGroupExists_percentage": 92.0496577176232,
+    "mepidExists": 242782,
+    "mepidExists_percentage": 100.0,
+    "nameExists": 242782,
+    "nameExists_percentage": 100.0,
+    "total": 242782,
+    "politicalGroupMissing": 19302,
+    "politicalGroupMissing_percentage": 7.950342282376782
+}

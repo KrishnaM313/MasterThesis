@@ -1,0 +1,10 @@
+{
+    "Left-wing": ["GUE/NGL", "The Left"],
+    "Social democrats": ["S&D"],
+    "Greens and regionalists": ["Verts/ALE"],
+    "Liberals and centrists": ["ALDE", "ELDR", "Renew", "LDR"],
+    "Christian democrats and conservatives": ["PPE", "ECR", "RDE"],
+    "Eurosceptic conservatives": ["EFDD", "IND/DEM"],
+    "Far-right nationalists": ["ID", "ENF"],
+    "Non-Inscrits": ["NI"]
+}
