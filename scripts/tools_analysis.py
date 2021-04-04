@@ -170,7 +170,7 @@ def analyseFileQuality(filePath,verbose=False):
         response = updateDataQualityResponse(speech,response,"name")
         response["total"] = 1
         result = addDictionaries(response, result)
-    return result
+    return result, len(data)
 
 def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
     err, politicalGroup = findDictKeyValue(data,key)

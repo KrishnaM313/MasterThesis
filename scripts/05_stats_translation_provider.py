@@ -2,12 +2,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-from tools_data import getBaseDir, loadJSON, saveJSON
+from tools_data import getBaseDir, loadJSON
 from tools_parties import fixParty, getPartyIdeology
 from tqdm import tqdm
 from tools_plot import plotGraph
-from collections import Counter
+from collections import Counter, OrderedDict
 from tools_stats import addPercentage
+from tools_latex import writeTable, toValueMatrix
+
 
 if __name__ == '__main__':
 
@@ -16,6 +18,7 @@ if __name__ == '__main__':
     JSONDir = os.path.join(baseDir,"json")
     JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
     plotsDir = os.path.join(baseDir,"plots")
+    statsDir = os.path.join(baseDir,"stats")
 
     analysisSummaryDir = os.path.join(baseDir,"analysisSummary")
 
@@ -33,11 +36,32 @@ if __name__ == '__main__':
     for file in tqdm(filePaths):
         speeches = loadJSON(file)
         for speech in speeches:
-            used_providers += [speech["translation_provider"]]
+            provider = speech["translation_provider"]
+            if provider == "":
+                provider = "none"
+            used_providers += [provider]
 
-    used_providers["total"] = len(used_providers)
-    used_providers = addPercentage(used_providers)
-    print(Counter(used_providers))
+    provider_stats = Counter(used_providers)
+
+    provider_stats = OrderedDict(sorted(provider_stats.items()))
+
+    header = ["provider", "used (abs.)", "used (rel.)"]
+
+    value_matrix = []
+    for key in provider_stats:
+        provider = key
+
+        row = [
+            provider, 
+            provider_stats[key],  
+            provider_stats[key]/len(used_providers)*100
+            ]
+        value_matrix += [row]
+
+    print(value_matrix)
+    providerStatsFile = os.path.join(statsDir,"provider_stats.tex")
+    table = writeTable("Translation Providers Used",header, value_matrix,providerStatsFile)
+
 
     exit()
     for category in ["climate", "health"]:

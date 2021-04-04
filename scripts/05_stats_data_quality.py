@@ -12,9 +12,9 @@ from tools_meps import downloadMEPInfos, findMEP, findMEPName, findMEPParty
 from tools_analysis import getDataFrames, appendAnalysis, doKeywordAnalysis, doFileAnalysis, analyseFile, analyseFileQuality, addDictionaries, addPercentage
 import numpy as np
 import pandas as pd
-from tabulate import tabulate
 from tqdm import tqdm
-from joblib import Parallel, delayed
+
+from tools_latex import writeTable
 
 healthAnalysis = pd.DataFrame()
 climateAnalysis = pd.DataFrame()
@@ -40,6 +40,7 @@ if __name__ == '__main__':
     JSONDir = os.path.join(baseDir,"json")
     JSONEnrichedDir = os.path.join(baseDir,"json_enriched")
     plotsDir = os.path.join(baseDir,"plots")
+    statsDir = os.path.join(baseDir,"stats")
 
 
     analysisDir = os.path.join(baseDir,"analysis")
@@ -60,14 +61,41 @@ if __name__ == '__main__':
 
     count = 0
     result = {}
-    for file in tqdm(filePaths):
+    total = 0
 
-        response = analyseFileQuality(file)
+    for file in tqdm(filePaths):
+        response, amount = analyseFileQuality(file)
+        total += amount
         result = addDictionaries(response, result)
         
-    result = addPercentage(result)
-    prettyPrint(result)
+    
 
+
+    header = ["attribute", "exists (abs.)", "exists (rel.)"]
+
+    value_matrix = [
+        [
+            "MEP ID", 
+            result["mepidExists"],  
+            result["mepidExists"]/total*100
+        ],
+        [
+            "Name exists", 
+            result["nameExists"],  
+            result["nameExists"]/total*100
+        ],
+        [
+            "Political Group", 
+            result["politicalGroupExists"],  
+            result["politicalGroupExists"]/total*100
+        ]
+    ]
+
+    print(value_matrix)
+    providerStatsFile = os.path.join(statsDir,"data_quality_stats.tex")
+    table = writeTable("Data quality statistics",header, value_matrix,providerStatsFile)  
+    
+    prettyPrint(result)
 
     statsDir = os.path.join(baseDir,"stats")
     statsFile = os.path.join(statsDir, "data_quality.json")
