@@ -10,7 +10,7 @@ from tools_data import saveJSON
 from tools_counter import getCounterPercentile
 
 
-def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False) -> plt:
+def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False, title=True) -> plt:
     data = df[["sum",dataKey]]
 
     start = data.index.searchsorted(datetime.datetime(startYear, 1, 1))
@@ -32,7 +32,9 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
 
     groups['sum'].plot(stacked=True)
     plt.legend(bbox_to_anchor=(1,1), loc="upper left")
-    plt.title(category)
+
+    if title:
+        plt.title(category)
     plt.tight_layout()
 
 
@@ -63,7 +65,7 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     
     return plt
 
-def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None):
+def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None, small=False):
     plt.clf()
 
 
@@ -75,7 +77,15 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
     indexes = np.arange(len(labels))
     width = 1
 
-    plt.bar(indexes, values, width)
+    density = False
+    if small:
+        density = True
+
+    align = None
+    if small:
+        align="edge"
+
+    plt.bar(indexes, values, width, align=align)
 
     percentile95 = getCounterPercentile(95,counter)
     plt.axvline(x=percentile95, color="red", label="95 percentile ("+str(percentile95)+")")
@@ -92,15 +102,16 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
 
     if showPlot is True:
         plt.show()
+    else:
+        if saveFigDirectoryPath is not None:
+            filename = "speeches_count_" + str.lower(category)
+            if startYear is not None:
+                filename = filename + "_" + str(startYear) + "_" + str(endYear)
 
-    if saveFigDirectoryPath is not None:
-        filename = "speeches_count_" + str.lower(category)
-        if startYear is not None:
-            filename = filename + "_" + str(startYear) + "_" + str(endYear)
-
-        plotPath = os.path.join(saveFigDirectoryPath, filename)
-        plt.savefig(plotPath+".png")
-        plt.savefig(plotPath+".svg", bbox_inches='tight')
-        if saveJSONFile:
-            saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
+            plotPath = os.path.join(saveFigDirectoryPath, filename)
+            plt.savefig(plotPath+".png")
+            plt.savefig(plotPath+".svg", bbox_inches='tight')
+            plt.savefig(plotPath+".pdf", bbox_inches='tight')
+            if saveJSONFile:
+                saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
 

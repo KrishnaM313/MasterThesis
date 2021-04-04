@@ -61,10 +61,10 @@ if __name__ == '__main__':
     result = {}
     
 
-    countInSpeech("word", filePaths, plotsDir)
-    countInSpeech("character", filePaths, plotsDir)
-    countInSpeech("word", filePaths, plotsDir, 2018,2021)
-    countInSpeech("character", filePaths, plotsDir, 2018,2021)
+    #countInSpeech("word", filePaths, plotsDir)
+    #countInSpeech("character", filePaths, plotsDir)
+    countInSpeech("word", filePaths, plotsDir, 2018,2021, small=True, showPlot=False, title=False)
+    #countInSpeech("character", filePaths, plotsDir, 2018,2021, appendix=False)
 
 
 
