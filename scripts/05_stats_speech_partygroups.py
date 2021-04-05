@@ -35,7 +35,6 @@ if __name__ == '__main__':
 
         for key in ["fixedPoliticalGroup","politicalGroupIdeology"]:
             plotGraph(df.copy(), category, key, plotsDir, 
-            startYear=2018, dropNA=False, verbose=True)
-        
+            startYear=2018, dropNA=False, verbose=True, title=False)      
         
 

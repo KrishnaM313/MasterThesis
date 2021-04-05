@@ -23,19 +23,24 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     groups = data.groupby(dataKey)
 
     overview = groups[dataKey].agg("count")
+    
     print(overview)
     if saveFigDirectoryPath is not None:
         overviewFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.json".format(category=category, dataKey=dataKey))
+        overview["total"] = overview.values.sum()
         overview.to_json(overviewFilePath)
 
     plt.clf()
 
     groups['sum'].plot(stacked=True)
-    plt.legend(bbox_to_anchor=(1,1), loc="upper left")
+    #plt.legend(bbox_to_anchor=(1,1), loc="upper left")
+    #plt.legend(loc=(1.04,0))
+    plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=2)
 
     if title:
         plt.title(category)
-    plt.tight_layout()
+    #plt.tight_layout()
 
 
     # print(data.head())
@@ -59,8 +64,9 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     #plt.plot(data)
     #df[['climate change','global warming']].sum().plot.bar()
     #print(df.head())
+    plt.subplots_adjust(top=0.75)
     if saveFigDirectoryPath is not None:
-        imgFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.png".format(category=category, dataKey=dataKey))
+        imgFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.pdf".format(category=category, dataKey=dataKey))
         plt.savefig(imgFilePath)
     
     return plt

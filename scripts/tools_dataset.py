@@ -2,25 +2,44 @@
 
 from torch.utils.data.dataset import Dataset, TensorDataset
 from math import floor
+from typing import Dict, List
 
 
-def getDataSplitSizes(dataset: TensorDataset):
-    total = dataset.__len__()
+def splitDateList(dateList: List[str]):
+    split = getDataSplitSizes(len(dateList))
+    return {
+        'train': dateList[0:(split["train"]-1)],
+        'test': dateList[split["train"]:(split["train"]+split["test"]-1)],
+        'validation':  dateList[(split["train"]+split["test"]):]
+    }
+
+def getDataSplitSizes(total: int, verbose: bool=False, dateList: List[str]=None) -> Dict[str, int]:
     train = floor(total*0.8)
     test = floor(total*0.15)
     val = total - train - test
     print("Dataset got split: {} Training, {} Testing & {} Validation Sub-dataset of total {}".format(train, test, val, total))
+    if verbose and dateList is not None:
+        trainStart = 0
+        trainEnd = train-1
+        print("{} - {} Training dataset (Index {} - {} = #{})".format(dateList[trainStart], dateList[trainEnd], trainStart, trainEnd, trainEnd-trainStart+1))
+        testStart = train
+        testEnd = train+test-1
+        print("{} - {} Testing dataset (Index {} - {} = #{})".format(dateList[testStart], dateList[testEnd], testStart, testEnd, testEnd-testStart+1))
+        valStart = train+test
+        valEnd = total-1
+        print("{} - {} Validation dataset (Index {} - {} = #{})".format(dateList[valStart], dateList[valEnd], valStart, valEnd, valEnd-valStart+1))
+    
     return {
         'train': train,
         'test': test,
         'validation':  val
     }
-  # tokens['token_type_ids'],
+    # tokens['token_type_ids'],
     #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
 
 
 def getDataSplitIndices(dataset: TensorDataset) -> dict:
-    lengths = getDataSplitSizes(dataset)
+    lengths = getDataSplitSizes(dataset.__len__())
     return {
         'train': [1]*lengths['train'] + [0]*lengths['test'] + [0]*lengths['validation'],
         'test': [0]*lengths['train'] + [1]*lengths['test'] + [0]*lengths['validation'],

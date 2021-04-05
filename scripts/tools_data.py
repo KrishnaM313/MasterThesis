@@ -8,7 +8,10 @@ from xml.etree import ElementTree as ET
 import pandas as pd
 from collections import Counter
 import time
-from datetime import datetime
+from typing import List
+
+import datetime
+
 
 def getBaseDir():
   environmentVariableName = "REPODIR"
@@ -96,12 +99,23 @@ def download(type,filepath,fileurl,header=1):
 def getDateInteger(year: int,month: int,day: int):
   return year*10000 + month*100 + day
 
-def getDateString(year: int,month: int,day: int):
-  return "{year}-{month}-{day}".format(year=str(year),month=str(month),day=str(day))
+# def getDateString(year: int,month: int,day: int):
+#   return "{year}-{month}-{day}".format(year=str(year),month=str(month),day=str(day))
 
-def extractDate(filename):
+def getDateString(date: datetime.date) -> str:
+  return date.strftime("%Y-%m-%d")
+
+# def extractDate(filename):
+#   year, month, day = extractDateValues(filename)
+#   return getDateString(year,month,day)
+
+def extractDate(filename: str) -> datetime.date:
   year, month, day = extractDateValues(filename)
-  return getDateString(year,month,day)
+  return datetime.date(year, month, day)
+
+def getDateStringFromFilename(filename: str) -> str:
+  date = extractDate(filename)
+  return getDateString(date)
 
 def extractDateValues(filename):
   pFileName = re.compile(r'.*(\d{4})-(\d{2})-(\d{2})', flags=re.DOTALL)
@@ -131,3 +145,17 @@ def speechHasOnlyNameInfo(speech):
 
 def addDictionaries(x: dict,y: dict) -> dict:
     return dict(Counter(x)+Counter(y))
+
+def getFileList(data_path: str, verbose: bool=False) -> List[str]:
+    fileList = os.listdir(data_path)
+    if verbose:
+        print("===== DATA =====")
+        print("DATA PATH: " + data_path)
+        print("LIST FILES IN DATA PATH...")
+        print(fileList)
+        print("================")
+    return fileList
+
+def convertFileListToDateList(fileList: List[str]) -> List[str]:
+  dateMap = map(getDateStringFromFilename, fileList)
+  return list(dateMap)

@@ -17,7 +17,7 @@ import argparse
 import torch.nn as nn
 from sklearn.metrics import classification_report
 import json
-from tools_logging import logValues, logConfusionMatrix
+from tools_logging import logValues, logConfusionMatrix, printModelParameters, printFileList, printSplitDates
 # from pytorch_lightning.loggers import MLFlowLogger
 # from torch.nn import functional as F
 
@@ -91,11 +91,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print("===== DATA =====")
-    print("DATA PATH: " + args.data_path)
-    print("LIST FILES IN DATA PATH...")
-    print(os.listdir(args.data_path))
-    print("================")
+    printFileList(args.data_path)
 
     run = Run.get_context()
 
@@ -118,6 +114,7 @@ if __name__ == '__main__':
     # lengths = getDataSplitSizes(dataset)
 
     splitIndices = getDataSplitIndices(dataset)
+    
 
     trainData = torch.utils.data.Subset(dataset, splitIndices['train'])
     testData = torch.utils.data.Subset(dataset, splitIndices['test'])
@@ -141,6 +138,10 @@ if __name__ == '__main__':
         num_labels=9,
         output_attentions=False,
         output_hidden_states=False)
+
+
+    printModelParameters(model)
+    exit()
 
     print(torch.cuda.memory_allocated()/1024**2)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
