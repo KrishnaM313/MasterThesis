@@ -7,8 +7,6 @@ import os
 import torch
 import numpy as np
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler, DataLoader, TensorDataset, random_split
-from torch import Tensor
-import math
 from tools_dataset import getDataSplitSizes, BertDataset, getDataSplitIndices, splitDateList
 from tqdm import tqdm
 from datasets import Dataset
@@ -25,8 +23,10 @@ from pandas import DataFrame
 from icecream import ic
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from sklearn import metrics
+from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score, f1_score
 from tools_parties import getIdeologyID
+
+
 
 if __name__ == '__main__':
 
@@ -87,9 +87,12 @@ if __name__ == '__main__':
 
     data = {}
 
+    
+    dictionaries = ["health"]#, "climate"
+
     for stage in tqdm(["train", "test"], position=0): #validate
         data[stage] = {}
-        for dictionary in tqdm(["health", "climate"], position=1):
+        for dictionary in tqdm(dictionaries, position=1): 
             data[stage][dictionary] = {}
             attribute_labels = None
             attributes = []
@@ -135,14 +138,18 @@ if __name__ == '__main__':
     regressor.fit(data["train"][dictionary]["attributes"], data["train"][dictionary]["labels"])
     y_pred = regressor.predict(data["test"][dictionary]["attributes"])
 
-    print('Mean Absolute Error:', metrics.mean_absolute_error(data["test"][dictionary]["labels"], y_pred))
-    print('Mean Squared Error:', metrics.mean_squared_error(data["test"][dictionary]["labels"], y_pred))
-    print('Root Mean Squared Error:', np.sqrt(metrics.mean_squared_error(data["test"][dictionary]["labels"], y_pred)))
+    print("#### TESTING SET")
 
-    #print(dateList)
+    result = {
+        "mean_absolute_error" : mean_absolute_error(data["test"][dictionary]["labels"], y_pred),
+        "mean_squared_error": mean_squared_error(data["test"][dictionary]["labels"], y_pred),
+        "sqrt_mean_squared_error": np.sqrt(mean_squared_error(data["test"][dictionary]["labels"], y_pred)),
+        "accuracy_score": accuracy_score(data["test"][dictionary]["labels"], y_pred > 0.5),
+        "f1_score": f1_score(data["test"][dictionary]["labels"], y_pred > 0.5, average="micro")
+    }
 
-    #print()
-    
+    print(result)
+
 
     #postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
 
