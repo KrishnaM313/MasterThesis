@@ -3,6 +3,7 @@
 from torch.utils.data.dataset import Dataset, TensorDataset
 from math import floor
 from typing import Dict, List
+import torch
 
 
 def splitDateList(dateList: List[str]):
@@ -38,7 +39,7 @@ def getDataSplitSizes(total: int, verbose: bool=False, dateList: List[str]=None)
     #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
 
 
-def getDataSplitIndices(dataset: TensorDataset) -> dict:
+def getDataSplitIndicesHotOne(dataset: TensorDataset) -> dict:
     lengths = getDataSplitSizes(dataset.__len__())
     return {
         'train': [1]*lengths['train'] + [0]*lengths['test'] + [0]*lengths['validation'],
@@ -46,15 +47,62 @@ def getDataSplitIndices(dataset: TensorDataset) -> dict:
         'validation':  [0]*lengths['train'] + [0]*lengths['test'] + [1]*lengths['validation']
     }
 
+def getDataSplitIndices(dataset: TensorDataset) -> dict:
+    lengths = getDataSplitSizes(dataset.__len__())
+    return {
+        'train': range(0,lengths['train']),
+        'test': range(lengths['train'], lengths['train']+lengths['test']),
+        'validation': range(lengths['train']+lengths['test'], dataset.__len__())   
+    }
+
+
+# class BertDatasetIterable(torch.utils.data.IterableDataset):
+#     def __init__(self, features, labels, selectIndices=None):
+#         super(BertDatasetIterable).__init__()
+#         if selectIndices is not None:
+#             self.input_ids =        features["input_ids"][selectIndices]
+#             self.token_type_ids =   features["token_type_ids"][selectIndices]
+#             self.attention_mask =   features["attention_mask"][selectIndices]
+#             self.labels =           labels[selectIndices]
+#         else:
+#             self.input_ids =        features["input_ids"]
+#             self.token_type_ids =   features["token_type_ids"]
+#             self.attention_mask =   features["attention_mask"]
+#             self.labels =           labels
+        
+#         self.start
+#         #assert end > start, "this example code only works with end >= start"
+#         #self.start = start
+#         #self.end = end
+
+#     def __iter__(self):
+        # worker_info = torch.utils.data.get_worker_info()
+        # if worker_info is None:  # single-process data loading, return the full iterator
+        #     iter_start = self.start
+        #     iter_end = self.end
+        # else:  # in a worker process
+        #     # split workload
+        #     per_worker = int(math.ceil((self.end - self.start) / float(worker_info.num_workers)))
+        #     worker_id = worker_info.id
+        #     iter_start = self.start + worker_id * per_worker
+        #     iter_end = min(iter_start + per_worker, self.end)
+        # return iter(range(iter_start, iter_end))
 
 class BertDataset(Dataset):
-    def __init__(self, features, labels, transform=None):
-        # super().__init__()
-        self.features = features
-        # self.input_ids = features['input_ids']
-        # self.token_type_ids = features['token_type_ids']
-        # self.attention_mask = features['attention_mask']
-        self.labels = labels
+    def __init__(self, features, labels, selectIndices=None, transform=None):
+        #super().__init__()
+
+        if selectIndices is not None:
+            self.input_ids =        features["input_ids"][selectIndices]
+            self.token_type_ids =   features["token_type_ids"][selectIndices]
+            self.attention_mask =   features["attention_mask"][selectIndices]
+            self.labels =           labels[selectIndices]
+        else:
+            self.input_ids =        features["input_ids"]
+            self.token_type_ids =   features["token_type_ids"]
+            self.attention_mask =   features["attention_mask"]
+            self.labels =           labels
+
         #self.transform = transform
 
 #  def getInputIDs(self):
@@ -70,13 +118,15 @@ class BertDataset(Dataset):
 #    return self.labels
 
     def __getitem__(self, index):
+        if torch.is_tensor(index):
+            index = index.tolist()
         # Load actual image here
         #x = self.features['input_ids'][index]
         # exit()
         return {
-            'input_ids': self.features['input_ids'][index],
-            'token_type_ids': self.features['token_type_ids'][index],
-            'attention_mask': self.features['attention_mask'][index],
+            'input_ids': self.input_ids[index],
+            'token_type_ids': self.token_type_ids[index],
+            'attention_mask': self.attention_mask[index],
             'labels': self.labels[index]
         }
 
@@ -89,10 +139,10 @@ class BertDataset(Dataset):
         # return x,y
 
     def __len__(self):
-        return len(self.features['input_ids'])
+        return len(self.input_ids)
 
     def getRawData(self):
         return self.features, self.labels
 
-    def filterNAs(self):
-        return self.features, self.labels
+    #def filterNAs(self):
+    #    return self.features, self.labels

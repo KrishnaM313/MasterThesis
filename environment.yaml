@@ -118,5 +118,6 @@ dependencies:
     - azureml.widgets
     - azureml-dataset-runtime
     - azureml-mlflow
+    - icecream==2.1.0
 prefix: /Users/michael/bin/anaconda3/envs/masterthesis
 

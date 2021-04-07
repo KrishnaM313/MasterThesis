@@ -8,18 +8,7 @@ def prettyPrint(json_string: str):
     print(json.dumps(json_string, indent=4))
 
 def logValues(run, result: dict):
-    # result = {
-    #     "epoch" : epoch,
-    #     "correct" : correct,
-    #     "total" : total,
-    #     "accuracy" : running_acc, 
-    #     "stage" : 'testing',
-    #     "classification_report_json" : classification_report_json,
-    #     "predicted_epoch": predicted_epoch_str,
-    #     "labels_epoch": labels_epoch_str
-    # }
-    keys = ["epoch", "correct", "total", "accuracy"]
-    for key in keys:
+    for key in result:
         run.log(key, result[key])
 
 def logConfusionMatrix(run, labels_epoch, predicted_epoch, labels=None, labelsRange=9, verbose=False):

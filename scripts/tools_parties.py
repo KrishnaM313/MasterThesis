@@ -98,7 +98,7 @@ def getPartyIdeology(party):
 
     return party
 
-def getIdeologyID(ideology):
+def getIdeologyID(ideology) -> int:
     if ideology == "Left-wing":
         return 1
     elif ideology == "Social democrats":

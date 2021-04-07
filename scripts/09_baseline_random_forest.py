@@ -20,7 +20,7 @@ from tools_logging import logValues, logConfusionMatrix, printModelParameters
 from tools_data import getFileList, convertFileListToDateList
 # from pytorch_lightning.loggers import MLFlowLogger
 from pandas import DataFrame
-from icecream import ic
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score, f1_score
