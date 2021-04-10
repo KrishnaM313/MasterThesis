@@ -1,5 +1,6 @@
 import re
 from tools_data import saveJSON
+from typing import Tuple
 
 def extractFromName(name):
     # extracts party name from brackets in name
@@ -74,10 +75,43 @@ def getPartyIdeologyAssociations():
         "Non-Inscrits": ["NI"]
     }
 
+def getPositionParty():
+    return {
+        "left" : ["GUE/NGL", "The Left", "S&D", "Verts/ALE"],
+        "right" : ["ALDE", "ELDR", "Renew", "LDR", "PPE", "ECR", "RDE","EFDD","IND/DEM", "ID", "ENF"],
+        "other": ["NI"]
+    }
+
+def getPositionPartyIdeologyAssociations():
+    return {
+        "left" : [
+            "Left-wing", 
+            "Social democrats", 
+            "Greens and regionalists"],
+        "center" : [
+            "Liberals and centrists"
+        ],
+        "right" : [
+            "Christian democrats and conservatives",
+            "Eurosceptic conservatives",
+            "Far-right nationalists"
+        ],
+        "other" : ["Non-Inscrits"]
+    }
+
+def getPartyIdeologyPosition(partyIdeology: str) -> Tuple[int, str]:
+    positions = getPositionPartyIdeologyAssociations()
+    for i,position in enumerate(positions):
+        if partyIdeology in positions[position]:
+            return i,position
+    return 3,"other"
+        
+
+
 def savePartyIdeologyAssociations(filepath):
     saveJSON(getPartyIdeologyAssociations(),filepath)
 
-savePartyIdeologyAssociations('/Users/michael/workspaces/MasterThesis/data/stats/party_associations.json')
+#savePartyIdeologyAssociations('/Users/michael/workspaces/MasterThesis/data/stats/party_associations.json')
 
 
 def getPartyIdeology(party):
@@ -99,21 +133,27 @@ def getPartyIdeology(party):
     return party
 
 def getIdeologyID(ideology) -> int:
-    if ideology == "Left-wing":
-        return 1
-    elif ideology == "Social democrats":
-        return 2
-    elif ideology == "Greens and regionalists":
-        return 3
-    elif ideology == "Liberals and centrists":
-        return 4
-    elif ideology == "Christian democrats and conservatives":
-        return 5
-    elif ideology == "Eurosceptic conservatives":
-        return 6
-    elif ideology == "Far-right nationalists":
-        return 7
-    elif ideology == "Non-Inscrits":
-        return 8
-    else:
-        return 0
+    parties = getPartyIdeologyAssociations()
+    for i,partyIdeology in enumerate(parties):
+        if ideology == partyIdeology:
+            return i
+    return 0
+
+    # if ideology == "Left-wing":
+    #     return 1
+    # elif ideology == "Social democrats":
+    #     return 2
+    # elif ideology == "Greens and regionalists":
+    #     return 3
+    # elif ideology == "Liberals and centrists":
+    #     return 4
+    # elif ideology == "Christian democrats and conservatives":
+    #     return 5
+    # elif ideology == "Eurosceptic conservatives":
+    #     return 6
+    # elif ideology == "Far-right nationalists":
+    #     return 7
+    # elif ideology == "Non-Inscrits":
+    #     return 8
+    # else:
+    #     return 0

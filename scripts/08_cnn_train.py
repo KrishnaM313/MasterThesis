@@ -18,8 +18,9 @@ import argparse
 import torch.nn as nn
 from sklearn.metrics import classification_report
 import json
-from tools_logging import logValues, logConfusionMatrix, printModelParameters
+from tools_logging import logValues, logConfusionMatrix, printModelParameters, logValue
 from tools_nn import evaluateResult, evaluateModel
+from transformers import get_linear_schedule_with_warmup
 # from pytorch_lightning.loggers import MLFlowLogger
 # from torch.nn import functional as F
 from icecream import ic
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--learning-rate",
         type=float,
-        default=0.0029,
+        default=0.001,
         help="Learning rate",
     )
     parser.add_argument(
@@ -73,6 +74,12 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help="should small or big dataset be used for training",
+    )
+    parser.add_argument(
+        '--labels',
+        type=str,
+        default="leftRightPosition",
+        help="which tensor data set to use as labels: can be leftRightPosition or partyGroupIdeology",
     )
 #    parser.add_argument(
 #      "--momentum",
@@ -114,11 +121,14 @@ if __name__ == '__main__':
 
 
     postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
-
-
     # Load Tensors
     tokens: torch.Tensor = torch.load(os.path.join(args.data_path, "tokens"+postfix))
-    labels: torch.Tensor = torch.load(os.path.join(args.data_path, "labels"+postfix))
+    if args.labels == "leftRightPosition":
+        labels: torch.Tensor = torch.load(os.path.join(args.data_path, "leftRightLabels"+postfix))
+    elif args.labels == "partyGroupIdeology":
+        labels: torch.Tensor = torch.load(os.path.join(args.data_path, "labels"+postfix))
+    
+    dates: torch.Tensor = torch.load(os.path.join(args.data_path, "dates"+postfix))
 
     # Create Dataset
     dataset = BertDataset(tokens, labels)
@@ -127,8 +137,18 @@ if __name__ == '__main__':
 
     # lengths = getDataSplitSizes(dataset)
 
-    splitIndices = getDataSplitIndices(dataset)
-    
+    # trainPercentage=0.9 testPercentage=0.05
+    # train: 2018.01.15 - 2020.10.21
+    # test: 2020.10.21 - 2020.11.25
+    # validation: 2020.12.14 - 2021.02.08
+
+    # trainPercentage=0.6 testPercentage=0.1
+    # train: 2018.01.15 - 2019.11.25
+    # test: 2019.11.25 - 2020.01.13
+    # validation: 2020.01.13 - 2021.02.08
+
+    splitIndices = getDataSplitIndices(dataset, dates=dates, run=run, trainPercentage=0.6, testPercentage=0.1)
+
     
 
     #trainData = torch.utils.data.Subset(dataset, splitIndices['train'])
@@ -140,9 +160,11 @@ if __name__ == '__main__':
     #testSampler = SubsetRandomSampler(splitIndices['test'], generator=g_cpu)
     #valSampler = SubsetRandomSampler(splitIndices['validation'], generator=g_cpu)
 
-    train_dataset = BertDataset(tokens, labels,splitIndices['train'])
-    test_dataset = BertDataset(tokens, labels,splitIndices['test'])
-    val_dataset = BertDataset(tokens, labels,splitIndices['validation'])
+    train_dataset = BertDataset(tokens, labels, splitIndices['train'])
+    test_dataset = BertDataset(tokens, labels, splitIndices['test'])
+    val_dataset = BertDataset(tokens, labels, splitIndices['validation'])
+
+
 
     #SubsetRandomSampler
 
@@ -150,7 +172,11 @@ if __name__ == '__main__':
 
 
     #trainSampler = SequentialSampler(trainData) #TODO: RAndomSampler
-    trainDataloader = DataLoader(train_dataset, batch_size=args.batch_size)
+    trainDataloader = DataLoader(
+        train_dataset,
+        shuffle=True,
+        batch_size=args.batch_size
+    )
 
     # for i, batch in enumerate(trainDataloader):
     #     ic(torch.sum(batch['labels']))
@@ -169,15 +195,15 @@ if __name__ == '__main__':
     #ic(torch.sum(train_dataset.__getitem__(0)["input_ids"]))
     
     #ic(splitIndices['train'])
-    #for number in [0,1,2,3,4,5]:
-    #    ic(torch.sum(train_dataset.__getitem__(number)["input_ids"]))
-        #ic(torch.sum(test_dataset.__getitem__(number)["input_ids"]))
-    #ic(sum(splitIndices['train']))
-    
+    # for number in [0,1,2,3,4,5]:
+    #     ic(torch.sum(train_dataset.__getitem__(number)["input_ids"]))
+    # ic(sum(splitIndices['test']))
+    # exit()
 
     # valSampler = RandomSampler(valData)
     # valDataloader = DataLoader(
     #     valData, sampler=valSampler, batch_size=batchSize)
+    logValue(run,"batch_size",args.batch_size)
     valDataloader = DataLoader(
             val_dataset, batch_size=args.batch_size)
 
@@ -195,10 +221,11 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(torch.cuda.memory_allocated()/1024**2)
 
-    print(torch.cuda.memory_allocated()/1024**2)
     optimizer = torch.optim.AdamW(
-        params=model.parameters(), lr=args.learning_rate)
-    print(torch.cuda.memory_allocated()/1024**2)
+        params=model.parameters(), 
+        lr=args.learning_rate
+    )
+    logValue(run,"learning_rate",args.learning_rate)
 
     loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -208,9 +235,17 @@ if __name__ == '__main__':
 
     total_step = len(trainDataloader)
 
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, 
+        num_warmup_steps = 100, 
+        num_training_steps = args.epochs * len(trainDataloader)
+    )
+
     model.to(device)
 
     for epoch in range(args.epochs):
+        total_train_loss = 0
+
         model.train()
 
         train_epoch_labels = []
@@ -222,41 +257,50 @@ if __name__ == '__main__':
             
             labels = batch["labels"].to(device)
 
-            outputs, aux_outputs = model(
+            model.zero_grad() # https://mccormickml.com/2019/07/22/BERT-fine-tuning/
+
+            output, logits = model(
                 input_ids=batch["input_ids"].to(device),
                 token_type_ids=batch["token_type_ids"].to(device),
                 attention_mask=batch["attention_mask"].to(device),
                 labels=labels
             )
 
-            _, train_batch_predicted = torch.max(aux_outputs, 1)
+            total_train_loss += output.item()
 
-            loss = train_criterion(aux_outputs, labels)
+            train_batch_predicted = torch.argmax(logits, 1)
+
+            loss = train_criterion(logits, labels)
 
             # appending the overall predicted and target tensor for the whole epoch to calculate the metrics as lists
             train_epoch_labels.append(torch.flatten(labels.cpu()))
             train_epoch_predictions.append(torch.flatten(train_batch_predicted.cpu()))
     
-            optimizer.zero_grad()
+            #optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
             #if (i+1) % 20 == 0:
             #    print(evaluateResult(train_epoch_labels,train_epoch_predictions))
             #     print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
             #         .format(epoch+1, args.epochs, i+1, total_step, loss.item()))
 
+
+        avg_train_loss = total_train_loss / len(trainDataloader) 
+        logValue(run,"epoch_train_avg_loss", avg_train_loss)
+
         train_epoch_labels = torch.cat(train_epoch_labels)
         train_epoch_predictions = torch.cat(train_epoch_predictions)
 
-        result = evaluateResult(train_epoch_labels,train_epoch_predictions, prefix="epoch_train_")
+        result = evaluateResult(train_epoch_labels,train_epoch_predictions, run, prefix="epoch_train_", demoLimit=demoLimit)
         print(result)
         logValues(run, result)
 
         # Testing
-        test_result = evaluateModel(model, trainDataloader, device, demoLimit, verbose=True, prefix="epoch_test_")
+        test_result = evaluateModel(model, trainDataloader, device, run, verbose=True, prefix="epoch_test_", demoLimit=demoLimit)
         logValues(run, test_result)
-    result = evaluateModel(model, testDataloader, device, demoLimit, verbose=True)
+    result = evaluateModel(model, testDataloader, device, run, verbose=True, demoLimit=demoLimit)
     logValues(run, result)
 
     print("Finished Training")

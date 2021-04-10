@@ -4,6 +4,8 @@ from torch.utils.data.dataset import Dataset, TensorDataset
 from math import floor
 from typing import Dict, List
 import torch
+from datetime import datetime
+from tools_logging import logValue
 
 
 def splitDateList(dateList: List[str]):
@@ -14,9 +16,9 @@ def splitDateList(dateList: List[str]):
         'validation':  dateList[(split["train"]+split["test"]):]
     }
 
-def getDataSplitSizes(total: int, verbose: bool=False, dateList: List[str]=None) -> Dict[str, int]:
-    train = floor(total*0.8)
-    test = floor(total*0.15)
+def getDataSplitSizes(total: int, verbose: bool=False, dateList: List[str]=None, trainPercentage=0.8, testPercentage=0.15) -> Dict[str, int]:
+    train = floor(total*trainPercentage)
+    test = floor(total*testPercentage)
     val = total - train - test
     print("Dataset got split: {} Training, {} Testing & {} Validation Sub-dataset of total {}".format(train, test, val, total))
     if verbose and dateList is not None:
@@ -39,21 +41,33 @@ def getDataSplitSizes(total: int, verbose: bool=False, dateList: List[str]=None)
     #dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
 
 
-def getDataSplitIndicesHotOne(dataset: TensorDataset) -> dict:
-    lengths = getDataSplitSizes(dataset.__len__())
+def getDataSplitIndicesHotOne(dataset: TensorDataset, trainPercentage=0.8, testPercentage=0.15) -> dict:
+    lengths = getDataSplitSizes(dataset.__len__(), trainPercentage=trainPercentage, testPercentage=testPercentage)
     return {
         'train': [1]*lengths['train'] + [0]*lengths['test'] + [0]*lengths['validation'],
         'test': [0]*lengths['train'] + [1]*lengths['test'] + [0]*lengths['validation'],
         'validation':  [0]*lengths['train'] + [0]*lengths['test'] + [1]*lengths['validation']
     }
 
-def getDataSplitIndices(dataset: TensorDataset) -> dict:
-    lengths = getDataSplitSizes(dataset.__len__())
-    return {
+def getDataSplitIndices(dataset: TensorDataset, dates=None, run=None, trainPercentage=0.8, testPercentage=0.15) -> dict:
+    lengths = getDataSplitSizes(dataset.__len__(), trainPercentage=trainPercentage, testPercentage=testPercentage)
+    
+    split = {
         'train': range(0,lengths['train']),
         'test': range(lengths['train'], lengths['train']+lengths['test']),
         'validation': range(lengths['train']+lengths['test'], dataset.__len__())   
     }
+
+    if dates is not None:
+        for stage in ["train", "test", "validation"]:
+            ranges = {
+                "start" : datetime.strptime(str(dates[split[stage][0]].item()), '%Y%m%d').strftime('%Y.%m.%d'),
+                "end" : datetime.strptime(str(dates[split[stage][-1]].item()), '%Y%m%d').strftime('%Y.%m.%d')
+            }
+
+            for event in ["start", "end"]:
+                logValue(run, "date_{}_{}".format(stage,event), ranges[event], verbose=True)
+    return split
 
 
 # class BertDatasetIterable(torch.utils.data.IterableDataset):

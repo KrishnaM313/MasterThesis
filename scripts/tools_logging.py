@@ -1,14 +1,19 @@
 from sklearn.metrics import multilabel_confusion_matrix
 import json
 import os
-
+from icecream import ic
 
 
 def prettyPrint(json_string: str):
     print(json.dumps(json_string, indent=4))
 
-def logValues(run, result: dict):
+def logValue(run, name, value, verbose=False):
+    logValues(run, { name : value }, verbose=verbose)
+
+def logValues(run, result: dict, verbose=False):
     for key in result:
+        if verbose:
+            print("{} : {}".format(key,str(result[key])))
         run.log(key, result[key])
 
 def logConfusionMatrix(run, labels_epoch, predicted_epoch, labels=None, labelsRange=9, verbose=False):
