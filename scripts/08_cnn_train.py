@@ -44,11 +44,17 @@ if __name__ == '__main__':
         "--category",
         type=str,
         help="Which dictionary should be used to determine which speeches are included. just determines the filename picked. No processing.",
+    ) 
+    parser.add_argument(
+        "--epsilon",
+        type=float,
+        default=1e-8,
+        help="Adam epsilon",
     )
     parser.add_argument(
         "--learning-rate",
         type=float,
-        default=0.001,
+        default=2e-5,
         help="Learning rate",
     )
     parser.add_argument(
@@ -90,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--epochs",
         type=int,
-        default=1,
+        default=4,
         help="Number of epochs to train"
     )
     parser.add_argument(
@@ -147,7 +153,12 @@ if __name__ == '__main__':
     # test: 2019.11.25 - 2020.01.13
     # validation: 2020.01.13 - 2021.02.08
 
-    splitIndices = getDataSplitIndices(dataset, dates=dates, run=run, trainPercentage=0.6, testPercentage=0.1)
+    splitIndices = getDataSplitIndices(
+        dataset, 
+        dates=dates, 
+        run=run, 
+        trainPercentage=0.8, 
+        testPercentage=0.15)
 
     
 
@@ -223,7 +234,8 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.AdamW(
         params=model.parameters(), 
-        lr=args.learning_rate
+        lr=args.learning_rate,
+        eps=args.epsilon
     )
     logValue(run,"learning_rate",args.learning_rate)
 
@@ -237,7 +249,7 @@ if __name__ == '__main__':
 
     scheduler = get_linear_schedule_with_warmup(
         optimizer, 
-        num_warmup_steps = 100, 
+        num_warmup_steps = 0, 
         num_training_steps = args.epochs * len(trainDataloader)
     )
 

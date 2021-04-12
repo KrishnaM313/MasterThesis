@@ -128,7 +128,12 @@ if __name__ == '__main__':
     # test: 2019.11.25 - 2020.01.13
     # validation: 2020.01.13 - 2021.02.08
 
-    splitIndices = getDataSplitIndices(dataset, dates=dates, run=run, trainPercentage=0.6, testPercentage=0.1)
+    splitIndices = getDataSplitIndices(
+        dataset, 
+        dates=dates, 
+        run=run, 
+        trainPercentage=0.6, 
+        testPercentage=0.1)
 
     data = {
         "train" : {
