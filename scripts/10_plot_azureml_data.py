@@ -100,14 +100,17 @@ if __name__ == '__main__':
             plt.show()
         return f, ax
 
-    def getMetricPlots(workspace: Workspace, category: str, labels: str, runNames: Dict, show=False, savePath=None):
+    def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None, runNames: Dict=None, show=False, savePath=None):
         plt.clf()
         experiment = getHDExperiment(ws, category, labels)
-        bestRun = getbestRunFromHD(experiment,runNames[category][labels])
+        if runNames is not None:
+            run = getbestRunFromHD(experiment,runNames[category][labels])
+        elif runID is not None:
+            run = Run(experiment, runID)
         f, ax = plt.subplots(2)
 
         for i, metric in enumerate(["accuracy","avg_loss"]):
-            f, ax = getMetricPlot(metric,bestRun, subplotID=i, plot=(f,ax))
+            f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax))
         if savePath is not None:
             imgFilePath = os.path.join(savePath,"training_{}_{}.pdf".format(category, labels))
             plt.savefig(imgFilePath)
@@ -118,7 +121,7 @@ if __name__ == '__main__':
     #getMetricPlot("avg_loss","Average Loss",bestRun,show=True)
 
 
-    runNames = {
+    HDrunNames = {
         "climate" : {
             "leftRightPosition" : "HD_71d73c5f-8d6a-4043-9f13-0080a6ec131a",
             "partyGroupIdeology" : "HD_40c5b23c-f0cb-4afe-bb2f-cb09c1b66eb4"
@@ -129,13 +132,24 @@ if __name__ == '__main__':
         }
     }
 
+    runIDs = {
+        "climate" : {
+            "leftRightPosition" : "Train_climate_leftRightPosition_1618328387_f019d14a",
+            "partyGroupIdeology" : "Train_climate_partyGroupIdeology_1618328085_64f49ef4"
+        },
+        "health" : {
+            "leftRightPosition" : "Train_health_leftRightPosition_1618328401_d4b41cca",
+            "partyGroupIdeology" : "Train_health_partyGroupIdeology_1618328409_b75fb6ac"
+        }
+    }
+
 
     #category = "health"
     #labels = "partyGroupIdeology"
 
     for category in ["health", "climate"]:
         for labels in ["leftRightPosition", "partyGroupIdeology"]:
-            getMetricPlots(ws, category, labels, runNames, show=False, savePath=plotsPath)
+            getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath)
 
 
     
