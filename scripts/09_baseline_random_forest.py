@@ -29,7 +29,6 @@ from tools_parties import getIdeologyID
 from tools_nn import evaluateResult
 from icecream import ic
 import joblib
-from azureml.core.model import Model
 
 if __name__ == '__main__':
 
@@ -75,6 +74,18 @@ if __name__ == '__main__':
         help="which tensor data set to use as labels: can be leftRightPosition or partyGroupIdeology",
     )
 
+    #default=0.80,
+    parser.add_argument(
+        "--train_share",
+        type=float
+    )
+    
+    #default=0.15,
+    parser.add_argument(
+        "--test_share",
+        type=float
+    )
+
     args = parser.parse_args()
 
     run = Run.get_context()
@@ -117,8 +128,8 @@ if __name__ == '__main__':
         dataset, 
         dates=dates, 
         run=run, 
-        trainPercentage=0.6, 
-        testPercentage=0.1)
+        trainPercentage=args.train_share, 
+        testPercentage=args.test_share)
 
     data = {
         "train" : {
@@ -160,7 +171,7 @@ if __name__ == '__main__':
     test_result = evaluateResult(**test_evaluation, prefix="final_test_")
     logValues(run, test_result, verbose=True)
 
-    modelName = "forest_"+args.category+"_"+args.labels
+    modelName = "forest_"+args.category+"_"+args.labels+"_train"+str(round(args.train_share*100))+"_test"+str(round(args.test_share*100))
     
     modelPath = "./"+modelName+".pkl" #args.output_dir
 

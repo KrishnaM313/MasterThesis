@@ -24,7 +24,8 @@ from transformers import get_linear_schedule_with_warmup
 # from pytorch_lightning.loggers import MLFlowLogger
 # from torch.nn import functional as F
 from icecream import ic
-
+import joblib
+from azureml.core.model import Model
 
 if __name__ == '__main__':
 
@@ -112,6 +113,18 @@ if __name__ == '__main__':
         help='output directory'
     )
 
+    #default=0.80,
+    parser.add_argument(
+        "--train_share",
+        type=float
+    )
+    
+    #default=0.15,
+    parser.add_argument(
+        "--test_share",
+        type=float
+    )
+
     args = parser.parse_args()
 
     print(getFileList(args.data_path))
@@ -157,8 +170,8 @@ if __name__ == '__main__':
         dataset, 
         dates=dates, 
         run=run, 
-        trainPercentage=0.8, 
-        testPercentage=0.15)
+        trainPercentage=args.train_share, 
+        testPercentage=args.test_share)
 
     
 
@@ -320,5 +333,22 @@ if __name__ == '__main__':
 
     print("Finished Training")
 
-    torch.save(model.state_dict(), os.path.join(
-        args.output_dir, "model_epoch"+str(epoch)+postfix))
+    
+    
+    modelName = "bert_"+args.category+"_"+args.labels+"_train"+str(round(args.train_share*100))+"_test"+str(round(args.test_share*100))
+
+
+    
+    modelPath = "./"+modelName+".pkl" #args.output_dir
+
+    #torch.save(model.state_dict(), modelPath)
+    #os.path.join(args.output_dir, "model_epoch"+str(epoch)+postfix)
+
+    joblib.dump(model, modelPath)
+    run.upload_file("outputs/"+modelName+".pkl", modelPath)
+
+    run.register_model(
+        model_name=modelName,
+        model_path="outputs/"+modelName+".pkl",
+        model_framework=Model.Framework.PYTORCH
+    )

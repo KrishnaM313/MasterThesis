@@ -1,3 +1,4 @@
+from azureml.core.workspace import Workspace
 import torch
 from tools_data import getBaseDir
 import os
@@ -8,6 +9,14 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from tools_logging import logValues, logConfusionMatrix, printModelParameters, logValue
 from transformers import BertTokenizer, BertModel, BertForSequenceClassification, AdamW
 from tools_nn import evaluateModel
+from azureml.core.model import Model
+from azureml.core import (
+    Experiment,
+    Environment,
+    ScriptRunConfig,
+    Dataset,
+    Run
+)
 
 if __name__ == '__main__':
 
@@ -45,17 +54,17 @@ if __name__ == '__main__':
         type=str,
         help="which tensor data set to use as labels: can be leftRightPosition or partyGroupIdeology",
     )
-#    parser.add_argument(
-#      "--momentum",
-#      type=float,
-#      default=0.9,
-#      help="Momentum for SGD"
-#    )
+
+    #default=0.80,
     parser.add_argument(
-        "--demo-limit",
-        type=int,
-        default=0,
-        help="Limit for loops"
+        "--train_share",
+        type=float
+    )
+    
+    #default=0.15,
+    parser.add_argument(
+        "--test_share",
+        type=float
     )
 
     args = parser.parse_args()
@@ -64,6 +73,11 @@ if __name__ == '__main__':
 
     run = Run.get_context()
 
+    experiment: Experiment = run.experiment
+    ws: Workspace = experiment.workspace
+    model = Model(ws, 'bert_climate_partyGroupIdeology_train90_test5')
+    print(model)
+    exit()
 
     seed = args.seed
     torch.manual_seed(seed)
