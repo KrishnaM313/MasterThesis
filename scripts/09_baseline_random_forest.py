@@ -28,7 +28,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_sc
 from tools_parties import getIdeologyID
 from tools_nn import evaluateResult
 from icecream import ic
-
+import joblib
+from azureml.core.model import Model
 
 if __name__ == '__main__':
 
@@ -39,11 +40,6 @@ if __name__ == '__main__':
         type=str,
         help="Path to the training data"
     )
-    # parser.add_argument(
-    #     "--pretrained-model",
-    #     type=str,
-    #     help="Path to the pretrained model to avoid download"
-    # )
     parser.add_argument(
         "--category",
         type=str,
@@ -76,19 +72,12 @@ if __name__ == '__main__':
     parser.add_argument(
         '--labels',
         type=str,
-        default="leftRightPosition",
         help="which tensor data set to use as labels: can be leftRightPosition or partyGroupIdeology",
     )
 
     args = parser.parse_args()
 
-
-
     run = Run.get_context()
-
-    #fileList = getFileList(args.data_path)
-    #fileList.sort()
-    #dateList = convertFileListToDateList(fileList)
 
     postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
     # Load Tensors
@@ -113,10 +102,6 @@ if __name__ == '__main__':
 
     # Create Dataset
     dataset = BertDataset(tokens, labels)
-
-    #batchSize = args.batch_size
-
-    # lengths = getDataSplitSizes(dataset)
 
     # trainPercentage=0.9 testPercentage=0.05
     # train: 2018.01.15 - 2020.10.21
@@ -153,44 +138,36 @@ if __name__ == '__main__':
     data["train"]["attributes"] = sc.fit_transform(data["train"]["attributes"])
     data["test"]["attributes"] = sc.transform(data["test"]["attributes"])
 
-    regressor = RandomForestClassifier(n_estimators=20, random_state=0)
-    regressor.fit(data["train"]["attributes"], data["train"]["labels"])
+    classifier = RandomForestClassifier(n_estimators=20, random_state=0)
+    classifier.fit(data["train"]["attributes"], data["train"]["labels"])
 
     print("#### TRAIN SET")
     stage = "train"
     train_evaluation = {
         "labels" : data[stage]["labels"],
-        "predicted" : regressor.predict(data[stage]["attributes"])
+        "predicted" : classifier.predict(data[stage]["attributes"])
     }
-    train_result = evaluateResult(**train_evaluation, prefix="train_")
+    train_result = evaluateResult(**train_evaluation, prefix="final_train_")
     logValues(run, train_result, verbose=True)
 
     print("#### TESTING SET")
     stage = "test"
     test_evaluation = {
         "labels" : data[stage]["labels"],
-        "predicted" : regressor.predict(data[stage]["attributes"])
+        "predicted" : classifier.predict(data[stage]["attributes"])
         
     }
-    test_result = evaluateResult(**test_evaluation, prefix="test_")
+    test_result = evaluateResult(**test_evaluation, prefix="final_test_")
     logValues(run, test_result, verbose=True)
 
-    # y_pred_test = regressor.predict(data["test"][dictionary]["attributes"])
-    # result["test"] = {
-    #     "mean_absolute_error" : mean_absolute_error(data["test"][dictionary]["labels"], y_pred_test),
-    #     "mean_squared_error": mean_squared_error(data["test"][dictionary]["labels"], y_pred_test),
-    #     "sqrt_mean_squared_error": np.sqrt(mean_squared_error(data["test"][dictionary]["labels"], y_pred_test)),
-    #     "accuracy_score": accuracy_score(data["test"][dictionary]["labels"], y_pred_test > 0.5),
-    #     "f1_score": f1_score(data["test"][dictionary]["labels"], y_pred_test > 0.5, average="micro")
-    # }
+    modelName = "forest_"+args.category+"_"+args.labels
+    
+    modelPath = "./"+modelName+".pkl" #args.output_dir
 
-    # print(result["test"])
+    joblib.dump(classifier, modelPath)
+    run.upload_file("outputs/"+modelName+".pkl", modelPath)
 
-
-    #postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
-
-    #tokens_path = os.path.join(args.data_path, "tokens"+postfix)
-    #tokens = torch.load(tokens_path)
-
-    #labels_path = os.path.join(args.data_path, "labels"+postfix)
-    #labels = torch.load(labels_path)
+    run.register_model(
+        model_name=modelName,
+        model_path="outputs/"+modelName+".pkl"
+    )
