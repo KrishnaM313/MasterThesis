@@ -310,9 +310,12 @@ if __name__ == '__main__':
         logValues(run, result)
 
         # Testing
-        test_result = evaluateModel(model, trainDataloader, device, run, verbose=True, prefix="epoch_test_", demoLimit=demoLimit)
+        test_result = evaluateModel(model, testDataloader, device, run, verbose=True, prefix="epoch_test_", demoLimit=demoLimit)
         logValues(run, test_result)
-    result = evaluateModel(model, testDataloader, device, run, verbose=True, demoLimit=demoLimit)
+    
+    result = evaluateModel(model, trainDataloader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_train_")
+    logValues(run, result)
+    result = evaluateModel(model, testDataloader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_test_")
     logValues(run, result)
 
     print("Finished Training")

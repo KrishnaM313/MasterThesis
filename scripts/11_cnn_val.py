@@ -138,5 +138,5 @@ if __name__ == '__main__':
     model.to(device)
     model.load_state_dict(torch.load(modelPath, map_location=torch.device(device)))
     model.eval()
-    result = evaluateModel(model, testDataloader, device, run, demoLimit=0, verbose=True, prefix="" )
+    result = evaluateModel(model, valDataloader, device, run, demoLimit=0, verbose=True, prefix="" )
     print(result)

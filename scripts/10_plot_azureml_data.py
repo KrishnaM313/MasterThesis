@@ -9,6 +9,70 @@ setup = False
 azure = "private"
 #modelName = "bert-base-uncased" # "openai-gpt" # 'bert-base-uncased'
 
+def getHDExperiment(workspace, category, labels, verbose=False):
+    runName = "HyperParameter_"+category+"_"+labels
+    if verbose:
+        print("Load "+runName)
+    experiment = Experiment(ws, name=runName)
+    return experiment
+
+def getbestRunFromHD(experiment: Experiment, hDRunName: str) -> Run:
+    run = Run(experiment,hDRunName)
+    metrics = run.get_metrics(name="best_child_by_primary_metric")
+    loss = metrics["best_child_by_primary_metric"]["metric_value"]
+    bestRunNumber = loss.index(min(loss))
+    bestRunID = metrics["best_child_by_primary_metric"]["run_id"][bestRunNumber]
+    bestRun = Run(experiment,bestRunID)
+    return bestRun
+
+
+def addPlot(prefix,stage,metric, run, ax):
+        xlabel="epochs"
+        bestRunMetrics = run.get_metrics(name=prefix+stage+"_"+metric)[prefix+stage+"_"+metric]
+        df = pd.DataFrame({
+            prefix+stage+"_"+metric : bestRunMetrics,
+            xlabel : range(len(bestRunMetrics))
+        })
+        ax.plot(df[xlabel], df[prefix+stage+"_"+metric], label=stage+"_"+metric)
+        ax.legend()
+        return ax
+
+def addStages(metric,bestRun,ax,prefix="epoch_"):
+    for stage in ["train","test"]:
+        ax = addPlot(prefix, stage, metric,bestRun,ax)
+    return ax
+
+def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None):
+    if plot is None:
+        f, ax = plt.subplots(1)
+    else:
+        f, ax = plot
+    ax[subplotID] = addStages(metric,run,ax[subplotID])
+    if title is not None:
+        plt.title(title)
+    if show:
+        plt.show()
+    return f, ax
+
+def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None, runNames: Dict=None, show=False, savePath=None):
+    plt.clf()
+    experiment = getHDExperiment(ws, category, labels)
+    if runNames is not None:
+        run = getbestRunFromHD(experiment,runNames[category][labels])
+    elif runID is not None:
+        run = Run(experiment, runID)
+    f, ax = plt.subplots(2)
+
+    for i, metric in enumerate(["accuracy","avg_loss"]):
+        f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax))
+    if savePath is not None:
+        imgFilePath = os.path.join(savePath,"training_{}_{}.pdf".format(category, labels))
+        plt.savefig(imgFilePath)
+    if show:
+        plt.show()
+    return f,ax
+
+
 if __name__ == '__main__':
 
 
@@ -45,81 +109,6 @@ if __name__ == '__main__':
     ws = Workspace(subscription_id, resource_group, workspace_name, auth=interactive_auth)
     ws
 
-    def getHDExperiment(workspace, category, labels, verbose=False):
-        runName = "HyperParameter_"+category+"_"+labels
-        if verbose:
-            print("Load "+runName)
-        experiment = Experiment(ws, name=runName)
-        return experiment
-
-    def getbestRunFromHD(experiment: Experiment, hDRunName: str) -> Run:
-        run = Run(experiment,hDRunName)
-        metrics = run.get_metrics(name="best_child_by_primary_metric")
-        loss = metrics["best_child_by_primary_metric"]["metric_value"]
-        bestRunNumber = loss.index(min(loss))
-        bestRunID = metrics["best_child_by_primary_metric"]["run_id"][bestRunNumber]
-        bestRun = Run(experiment,bestRunID)
-        return bestRun
-
-
-    #categories = ["climate", "health"]
-    #labelsSelection = ["leftRightPosition", "partyGroupIdeology"]
-
-
-
-
-
-
-
-
-    def addPlot(prefix,stage,metric, run, ax):
-        xlabel="epochs"
-        bestRunMetrics = run.get_metrics(name=prefix+stage+"_"+metric)[prefix+stage+"_"+metric]
-        df = pd.DataFrame({
-            prefix+stage+"_"+metric : bestRunMetrics,
-            xlabel : range(len(bestRunMetrics))
-        })
-        ax.plot(df[xlabel], df[prefix+stage+"_"+metric], label=stage+"_"+metric)
-        ax.legend()
-        return ax
-
-    def addStages(metric,bestRun,ax,prefix="epoch_"):
-        for stage in ["train","test"]:
-            ax = addPlot(prefix, stage, metric,bestRun,ax)
-        return ax
-
-    def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None):
-        if plot is None:
-            f, ax = plt.subplots(1)
-        else:
-            f, ax = plot
-        ax[subplotID] = addStages(metric,run,ax[subplotID])
-        if title is not None:
-            plt.title(title)
-        if show:
-            plt.show()
-        return f, ax
-
-    def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None, runNames: Dict=None, show=False, savePath=None):
-        plt.clf()
-        experiment = getHDExperiment(ws, category, labels)
-        if runNames is not None:
-            run = getbestRunFromHD(experiment,runNames[category][labels])
-        elif runID is not None:
-            run = Run(experiment, runID)
-        f, ax = plt.subplots(2)
-
-        for i, metric in enumerate(["accuracy","avg_loss"]):
-            f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax))
-        if savePath is not None:
-            imgFilePath = os.path.join(savePath,"training_{}_{}.pdf".format(category, labels))
-            plt.savefig(imgFilePath)
-        if show:
-            plt.show()
-        return f,ax
-    #exit()
-    #getMetricPlot("avg_loss","Average Loss",bestRun,show=True)
-
 
     HDrunNames = {
         "climate" : {
@@ -150,33 +139,3 @@ if __name__ == '__main__':
     for category in ["health", "climate"]:
         for labels in ["leftRightPosition", "partyGroupIdeology"]:
             getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath)
-
-
-    
-
-
-    
-    # plotting a bar graph
-
-
-    #plt.clf()
-
-    ##df.plot(**data)
-    #plt.legend(bbox_to_anchor=(1,1), loc="upper left")
-    #plt.legend(loc=(1.04,0))
-
-    #plt.title(category)
-
-
-    #trainRuns = trainExperiment.get_runs(tags={"thesis":1})
-    #trainRun: Run = next(trainRuns)
-    #print()
-    #trainRunChildren = trainRun.get_children()
-    #trainRunChildren: Run = next(trainRunChildren)
-    #for i,run in enumerate(trainRunChildren):
-    #    print(run)
-    #print(trainRunChildren)
-    #for trainRunChild in trainRunChildren:
-    #    print(trainRunChild)
-    #    exit()
-    #print(trainRunChildren)
