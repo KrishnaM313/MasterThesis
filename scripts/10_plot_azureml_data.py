@@ -4,6 +4,15 @@ from tools_plot import plotGraph
 import matplotlib.pyplot as plt
 import pandas as pd
 from typing import Dict
+from azureml.core import (
+    Experiment,
+    Environment,
+    ScriptRunConfig,
+    Dataset,
+    Workspace,
+    Run
+)
+from tools_data import saveJSON
 # Azure Connection Details
 setup = False
 azure = "private"
@@ -37,24 +46,27 @@ def addPlot(prefix,stage,metric, run, ax):
         ax.legend()
         return ax
 
-def addStages(metric,bestRun,ax,prefix="epoch_"):
-    for stage in ["train","test"]:
+def addStages(metric,bestRun,ax,prefix="epoch_",activeValidation=False):
+    stages = ["train","test"]
+    if activeValidation:
+        stages.append("validation")
+    for stage in stages:
         ax = addPlot(prefix, stage, metric,bestRun,ax)
     return ax
 
-def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None):
+def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None, activeValidation=False):
     if plot is None:
         f, ax = plt.subplots(1)
     else:
         f, ax = plot
-    ax[subplotID] = addStages(metric,run,ax[subplotID])
+    ax[subplotID] = addStages(metric,run,ax[subplotID],activeValidation=activeValidation)
     if title is not None:
         plt.title(title)
     if show:
         plt.show()
     return f, ax
 
-def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None, runNames: Dict=None, show=False, savePath=None):
+def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None, runNames: Dict=None, show=False, savePath=None, activeValidation=False):
     plt.clf()
     experiment = getHDExperiment(ws, category, labels)
     if runNames is not None:
@@ -64,14 +76,30 @@ def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None,
     f, ax = plt.subplots(2)
 
     for i, metric in enumerate(["accuracy","avg_loss"]):
-        f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax))
+        f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax),activeValidation=False)
     if savePath is not None:
-        imgFilePath = os.path.join(savePath,"training_{}_{}.pdf".format(category, labels))
-        plt.savefig(imgFilePath)
+        for extension in ["pdf","png"]:
+            imgFilePath = os.path.join(savePath,"training_{}_{}.{}".format(category, labels, extension))
+            plt.savefig(imgFilePath)
     if show:
         plt.show()
-    return f,ax
+    return run, f, ax
 
+def getMetricsFromRun(run:Run,activeValidation=False):
+    result = {
+        "accuracy" : {
+            "train" : run.get_metrics("final_train_accuracy"),
+            "test" : run.get_metrics("final_test_accuracy"),
+        },
+        "loss" : {
+            "train" : run.get_metrics("final_train_avg_loss"),
+            "test" : run.get_metrics("final_test_avg_loss"),
+        }
+    }
+    if activeValidation:
+        result["accuracy"]["validation"] = run.get_metrics("final_validation_accuracy")
+        result["loss"]["validation"] = run.get_metrics("final_validation_avg_loss")
+    return result
 
 if __name__ == '__main__':
 
@@ -110,25 +138,40 @@ if __name__ == '__main__':
     ws
 
 
-    HDrunNames = {
-        "climate" : {
-            "leftRightPosition" : "HD_71d73c5f-8d6a-4043-9f13-0080a6ec131a",
-            "partyGroupIdeology" : "HD_40c5b23c-f0cb-4afe-bb2f-cb09c1b66eb4"
-        },
-        "health" : {
-            "leftRightPosition" : "HD_4c9b0819-5cf5-45cc-a2a8-4c04107d2fa9",
-            "partyGroupIdeology" : "HD_15204d49-52fc-465a-beac-104d6f32710c"
-        }
+    # HDrunNames = {
+    #     "climate" : {
+    #         "leftRightPosition" : "HD_71d73c5f-8d6a-4043-9f13-0080a6ec131a",
+    #         "partyGroupIdeology" : "HD_40c5b23c-f0cb-4afe-bb2f-cb09c1b66eb4"
+    #     },
+    #     "health" : {
+    #         "leftRightPosition" : "HD_4c9b0819-5cf5-45cc-a2a8-4c04107d2fa9",
+    #         "partyGroupIdeology" : "HD_15204d49-52fc-465a-beac-104d6f32710c"
+    #     }
+    # }
+    distributions = [
+    {
+        "train" : 0.80,
+        "test" : 0.15
+    },
+    {
+        "train" : 0.60,
+        "test" : 0.10
+    },
+    {
+        "train" : 0.90,
+        "test" : 0.05
     }
+]
+
 
     runIDs = {
         "climate" : {
-            "leftRightPosition" : "Train_climate_leftRightPosition_1618328387_f019d14a",
-            "partyGroupIdeology" : "Train_climate_partyGroupIdeology_1618328085_64f49ef4"
+            #"leftRightPosition" : "Train_climate_leftRightPosition_1618328387_f019d14a",
+            "partyGroupIdeology" : "Train_climate_partyGroupIdeology_1618501263_191ba6fa"
         },
         "health" : {
-            "leftRightPosition" : "Train_health_leftRightPosition_1618328401_d4b41cca",
-            "partyGroupIdeology" : "Train_health_partyGroupIdeology_1618328409_b75fb6ac"
+            #"leftRightPosition" : "Train_health_leftRightPosition_1618328401_d4b41cca",
+            "partyGroupIdeology" : "Train_health_partyGroupIdeology_1618501242_5fe1a877"
         }
     }
 
@@ -136,6 +179,13 @@ if __name__ == '__main__':
     #category = "health"
     #labels = "partyGroupIdeology"
 
+
+
     for category in ["health", "climate"]:
-        for labels in ["leftRightPosition", "partyGroupIdeology"]:
-            getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath)
+        for labels in ["partyGroupIdeology"]: #"leftRightPosition", 
+            run, _, _ = getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath)
+            result = getMetricsFromRun(run)
+            
+            saveJSON(result, os.path.join(plotsPath,))
+            plotsPath
+            exit()

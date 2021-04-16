@@ -173,6 +173,7 @@ if __name__ == '__main__':
         trainPercentage=args.train_share, 
         testPercentage=args.test_share)
 
+
     
 
     #trainData = torch.utils.data.Subset(dataset, splitIndices['train'])
@@ -202,44 +203,25 @@ if __name__ == '__main__':
         batch_size=args.batch_size
     )
 
-    # for i, batch in enumerate(trainDataloader):
-    #     ic(torch.sum(batch['labels']))
-    #     #(torch.sum(batch["input_ids"]))
-    #     if i > 5:
-    #         exit()
-        
-
-
-#    testSampler = RandomSampler(testData)
-#    testDataloader = DataLoader(
-#        testData, sampler=testSampler, batch_size=batchSize, shuffle=False)
     testDataloader = DataLoader(
-            test_dataset, batch_size=args.batch_size)
+        test_dataset, 
+        batch_size=args.batch_size
+    )
 
-    #ic(torch.sum(train_dataset.__getitem__(0)["input_ids"]))
-    
-    #ic(splitIndices['train'])
-    # for number in [0,1,2,3,4,5]:
-    #     ic(torch.sum(train_dataset.__getitem__(number)["input_ids"]))
-    # ic(sum(splitIndices['test']))
-    # exit()
+    valDataloader = DataLoader(
+        val_dataset, 
+        batch_size=args.batch_size
+    )
 
-    # valSampler = RandomSampler(valData)
-    # valDataloader = DataLoader(
-    #     valData, sampler=valSampler, batch_size=batchSize)
     logValue(run,"batch_size",args.batch_size)
     valDataloader = DataLoader(
             val_dataset, batch_size=args.batch_size)
 
-    # 'bert-base-uncased'
     model = BertForSequenceClassification.from_pretrained(
         args.pretrained_model,
         num_labels=9,
         output_attentions=False,
         output_hidden_states=False)
-
-
-    #printModelParameters(model)
  
     print(torch.cuda.memory_allocated()/1024**2)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -268,7 +250,7 @@ if __name__ == '__main__':
 
     model.to(device)
 
-    for epoch in range(args.epochs):
+    for epoch in tqdm(range(args.epochs)):
         total_train_loss = 0
 
         model.train()
@@ -330,6 +312,8 @@ if __name__ == '__main__':
     logValues(run, result)
     result = evaluateModel(model, testDataloader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_test_")
     logValues(run, result)
+    #result = evaluateModel(model, valDataLoader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_validation_")
+    #logValues(run, result)
 
     print("Finished Training")
 
@@ -340,9 +324,6 @@ if __name__ == '__main__':
 
     
     modelPath = "./"+modelName+".pkl" #args.output_dir
-
-    #torch.save(model.state_dict(), modelPath)
-    #os.path.join(args.output_dir, "model_epoch"+str(epoch)+postfix)
 
     joblib.dump(model, modelPath)
     run.upload_file("outputs/"+modelName+".pkl", modelPath)

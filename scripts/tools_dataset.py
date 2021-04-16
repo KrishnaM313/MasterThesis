@@ -65,8 +65,11 @@ def getDataSplitIndices(dataset: TensorDataset, dates=None, run=None, trainPerce
                 "end" : datetime.strptime(str(dates[split[stage][-1]].item()), '%Y%m%d').strftime('%Y.%m.%d')
             }
 
-            for event in ["start", "end"]:
-                logValue(run, "date_{}_{}".format(stage,event), ranges[event], verbose=True)
+            if run is not None:
+                logValue(run,"share_train",trainPercentage)
+                logValue(run,"share_test",testPercentage)
+                for event in ["start", "end"]:
+                    logValue(run, "date_{}_{}".format(stage,event), ranges[event], verbose=True)
     return split
 
 

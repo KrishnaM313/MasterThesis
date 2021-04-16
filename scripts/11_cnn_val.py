@@ -17,6 +17,23 @@ from azureml.core import (
     Dataset,
     Run
 )
+import joblib
+from icecream import ic
+from tools_nn import evaluateResult
+
+def getModelFilename(model_type, category, labels, train_share, test_share, verbose=False):
+    modelFilename = model_type+'_'+category+'_'+labels+'_train'+str(round(train_share*100))+'_test'+str(round(test_share*100))+".pkl"
+    if verbose:
+        ic(modelFilename)
+    return modelFilename
+
+def loadModel(models_path, model_type, category, labels, train_share, test_share, verbose=False):
+    modelFilename = getModelFilename(model_type, category, labels, train_share, test_share, verbose=verbose)
+    modelPath = os.path.join(models_path, modelFilename)
+    model = joblib.load(modelPath)
+    if verbose:
+        ic(model)
+    return model
 
 if __name__ == '__main__':
 
@@ -27,11 +44,17 @@ if __name__ == '__main__':
     #     type=str,
     #     help="Path to the training data"
     # )
-    # parser.add_argument(
-    #     "--pretrained-model",
-    #     type=str,
-    #     help="Path to the pretrained model to avoid download"
-    # )
+    parser.add_argument(
+        "--models-path",
+        type=str,
+        help="Path to the pretrained model file (joblib)"
+    )
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        help="Path to the pretrained model file (joblib)",
+        default="bert"
+    )
     parser.add_argument(
         "--category",
         type=str,
@@ -57,13 +80,13 @@ if __name__ == '__main__':
 
     #default=0.80,
     parser.add_argument(
-        "--train_share",
+        "--train-share",
         type=float
     )
     
     #default=0.15,
     parser.add_argument(
-        "--test_share",
+        "--test-share",
         type=float
     )
 
@@ -71,13 +94,7 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    run = Run.get_context()
 
-    experiment: Experiment = run.experiment
-    ws: Workspace = experiment.workspace
-    model = Model(ws, 'bert_climate_partyGroupIdeology_train90_test5')
-    print(model)
-    exit()
 
     seed = args.seed
     torch.manual_seed(seed)
@@ -91,7 +108,7 @@ if __name__ == '__main__':
 
     repoDir = getBaseDir()
     dataDirectory = os.path.join(repoDir, "data")
-    bertModelDirectory = os.path.join(dataDirectory, "models", "bert-base-uncased")
+    #bertModelDirectory = os.path.join(dataDirectory, "models", "bert-base-uncased")
     modelsTrained = os.path.join(dataDirectory,"models_trained")
     modelPath = os.path.join(modelsTrained, args.category+"_"+args.labels+".pt")
     tokensDirectory = os.path.join(dataDirectory, "embeddings")
@@ -109,6 +126,7 @@ if __name__ == '__main__':
     # Create Dataset
     dataset = BertDataset(tokens, labels)
 
+    run = None
     # trainPercentage=0.9 testPercentage=0.05
     # train: 2018.01.15 - 2020.10.21
     # test: 2020.10.21 - 2020.11.25
@@ -123,8 +141,8 @@ if __name__ == '__main__':
         dataset, 
         dates=dates, 
         run=run, 
-        trainPercentage=0.8, 
-        testPercentage=0.15)
+        trainPercentage=args.train_share, 
+        testPercentage=args.test_share)
 
     #train_dataset = BertDataset(tokens, labels, splitIndices['train'])
     test_dataset = BertDataset(tokens, labels, splitIndices['test'])
@@ -140,17 +158,18 @@ if __name__ == '__main__':
         batch_size=args.batch_size, 
         shuffle=False
     )
-    logValue(run,"batch_size",args.batch_size)
 
-    model = BertForSequenceClassification.from_pretrained(
-        bertModelDirectory,
-        num_labels=9,
-        output_attentions=False,
-        output_hidden_states=False)
 
-    print(model)
+    model = loadModel(args.models_path, args.model_type, args.category, args.labels, args.train_share, args.test_share, verbose=True)
+
+
+    #logValue(run,"batch_size",args.batch_size)
+
+
     model.to(device)
-    model.load_state_dict(torch.load(modelPath, map_location=torch.device(device)))
     model.eval()
     result = evaluateModel(model, valDataloader, device, run, demoLimit=0, verbose=True, prefix="" )
+    #model.load_state_dict(torch.load(modelPath, map_location=torch.device(device)))
+    
+    
     print(result)
