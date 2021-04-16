@@ -312,8 +312,8 @@ if __name__ == '__main__':
     logValues(run, result)
     result = evaluateModel(model, testDataloader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_test_")
     logValues(run, result)
-    #result = evaluateModel(model, valDataLoader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_validation_")
-    #logValues(run, result)
+    result = evaluateModel(model, valDataloader, device, run, verbose=True, demoLimit=demoLimit, prefix="final_validation_")
+    logValues(run, result)
 
     print("Finished Training")
 

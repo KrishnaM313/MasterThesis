@@ -1,0 +1,58 @@
+{
+    "accuracy": {
+        "train": {
+            "final_train_accuracy": 0.18682969672894664
+        },
+        "test": {
+            "final_test_accuracy": 0.18069584736251404
+        },
+        "validation": {
+            "final_validation_accuracy": 0.21364676513417927
+        }
+    },
+    "loss": {
+        "train": {
+            "final_train_avg_loss": 1.619660029044518
+        },
+        "test": {
+            "final_test_avg_loss": 1.5465016961097717
+        },
+        "validation": {
+            "final_validation_avg_loss": 1.8153306245803833
+        }
+    },
+    "shares": {
+        "train": {
+            "share_test": 0.1
+        },
+        "test": {
+            "share_train": 0.8
+        }
+    },
+    "dates": {
+        "train": {
+            "start": {
+                "date_train_start": "2018.01.15"
+            },
+            "end": {
+                "date_train_end": "2020.09.16"
+            }
+        },
+        "test": {
+            "start": {
+                "date_test_start": "2020.09.16"
+            },
+            "end": {
+                "date_test_end": "2020.10.21"
+            }
+        },
+        "validation": {
+            "start": {
+                "date_validation_start": "2020.10.21"
+            },
+            "end": {
+                "date_validation_end": "2021.02.08"
+            }
+        }
+    }
+}

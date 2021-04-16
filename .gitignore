@@ -135,3 +135,4 @@ data/embeddings/
 data/models/
 data/embeddings_backup/
 data/models_backup/
+data/models_trained/

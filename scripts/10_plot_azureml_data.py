@@ -35,23 +35,30 @@ def getbestRunFromHD(experiment: Experiment, hDRunName: str) -> Run:
     return bestRun
 
 
-def addPlot(prefix,stage,metric, run, ax):
+def addPlot(prefix,stage,metric, run, ax,verbose=False,subplotID=0):
         xlabel="epochs"
         bestRunMetrics = run.get_metrics(name=prefix+stage+"_"+metric)[prefix+stage+"_"+metric]
+        if verbose:
+            print("got metric {}: {}".format(prefix+stage+"_"+metric,bestRunMetrics))
+            #print(range(1,bestRunMetrics+1))
+            print("Indices: {}".format([*range(1,len(bestRunMetrics)+1)]))
+
         df = pd.DataFrame({
             prefix+stage+"_"+metric : bestRunMetrics,
-            xlabel : range(len(bestRunMetrics))
+            xlabel : [*range(1,len(bestRunMetrics)+1)]
         })
         ax.plot(df[xlabel], df[prefix+stage+"_"+metric], label=stage+"_"+metric)
+        plt.sca(ax)
+        plt.xticks([*range(1,len(bestRunMetrics)+1)])
         ax.legend()
         return ax
 
-def addStages(metric,bestRun,ax,prefix="epoch_",activeValidation=False):
+def addStages(metric,bestRun,ax,prefix="epoch_",activeValidation=False,subplotID=0):
     stages = ["train","test"]
     if activeValidation:
         stages.append("validation")
     for stage in stages:
-        ax = addPlot(prefix, stage, metric,bestRun,ax)
+        ax = addPlot(prefix, stage, metric,bestRun,ax,subplotID=subplotID)
     return ax
 
 def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None, activeValidation=False):
@@ -59,7 +66,7 @@ def getMetricPlot(metric,run,title=None,subplotID=0, show=False, plot=None, acti
         f, ax = plt.subplots(1)
     else:
         f, ax = plot
-    ax[subplotID] = addStages(metric,run,ax[subplotID],activeValidation=activeValidation)
+    ax[subplotID] = addStages(metric,run,ax[subplotID],activeValidation=activeValidation,subplotID=subplotID)
     if title is not None:
         plt.title(title)
     if show:
@@ -76,7 +83,7 @@ def getMetricPlots(workspace: Workspace, category: str, labels: str, runID=None,
     f, ax = plt.subplots(2)
 
     for i, metric in enumerate(["accuracy","avg_loss"]):
-        f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax),activeValidation=False)
+        f, ax = getMetricPlot(metric, run, subplotID=i, plot=(f,ax),activeValidation=activeValidation)
     if savePath is not None:
         for extension in ["pdf","png"]:
             imgFilePath = os.path.join(savePath,"training_{}_{}.{}".format(category, labels, extension))
@@ -94,8 +101,18 @@ def getMetricsFromRun(run:Run,activeValidation=False):
         "loss" : {
             "train" : run.get_metrics("final_train_avg_loss"),
             "test" : run.get_metrics("final_test_avg_loss"),
-        }
+        },
+        "shares" : {
+            "train" : run.get_metrics("share_test"),
+            "test" : run.get_metrics("share_train")
+        }   
     }
+    result["dates"] = {}
+    for stage in ["train","test","validation"]:
+        result["dates"][stage] = {}
+        for event in ["start", "end"]:
+            result["dates"][stage][event] = run.get_metrics("date_"+stage+"_"+event)
+
     if activeValidation:
         result["accuracy"]["validation"] = run.get_metrics("final_validation_accuracy")
         result["loss"]["validation"] = run.get_metrics("final_validation_avg_loss")
@@ -167,11 +184,11 @@ if __name__ == '__main__':
     runIDs = {
         "climate" : {
             #"leftRightPosition" : "Train_climate_leftRightPosition_1618328387_f019d14a",
-            "partyGroupIdeology" : "Train_climate_partyGroupIdeology_1618501263_191ba6fa"
+            "partyGroupIdeology" : "Train_climate_partyGroupIdeology_1618584360_1978a387"
         },
         "health" : {
             #"leftRightPosition" : "Train_health_leftRightPosition_1618328401_d4b41cca",
-            "partyGroupIdeology" : "Train_health_partyGroupIdeology_1618501242_5fe1a877"
+            "partyGroupIdeology" : "Train_health_partyGroupIdeology_1618584339_0b953964"
         }
     }
 
@@ -181,11 +198,10 @@ if __name__ == '__main__':
 
 
 
+
     for category in ["health", "climate"]:
         for labels in ["partyGroupIdeology"]: #"leftRightPosition", 
-            run, _, _ = getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath)
-            result = getMetricsFromRun(run)
-            
-            saveJSON(result, os.path.join(plotsPath,))
+            run, _, _ = getMetricPlots(ws, category, labels, runID=runIDs[category][labels], show=False, savePath=plotsPath, activeValidation=False)
+            result = getMetricsFromRun(run, activeValidation=True)
+            saveJSON(result, os.path.join(plotsPath,"training_{}_{}.json".format(category, labels)))
             plotsPath
-            exit()
