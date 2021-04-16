@@ -139,6 +139,10 @@ if __name__ == '__main__':
         "test" : {
             "attributes" : keywordAnalysis[splitIndices['test']],
             "labels" : labels[splitIndices['test']]
+        },
+        "validation" : {
+            "attributes" : keywordAnalysis[splitIndices['validation']],
+            "labels" : labels[splitIndices['validation']]
         }
     }
     
@@ -148,6 +152,7 @@ if __name__ == '__main__':
 
     data["train"]["attributes"] = sc.fit_transform(data["train"]["attributes"])
     data["test"]["attributes"] = sc.transform(data["test"]["attributes"])
+    data["validation"]["attributes"] = sc.transform(data["validation"]["attributes"])
 
     classifier = RandomForestClassifier(n_estimators=20, random_state=0)
     classifier.fit(data["train"]["attributes"], data["train"]["labels"])
@@ -158,7 +163,7 @@ if __name__ == '__main__':
         "labels" : data[stage]["labels"],
         "predicted" : classifier.predict(data[stage]["attributes"])
     }
-    train_result = evaluateResult(**train_evaluation, prefix="final_train_")
+    train_result = evaluateResult(**train_evaluation, prefix="final_"+stage+"_")
     logValues(run, train_result, verbose=True)
 
     print("#### TESTING SET")
@@ -168,7 +173,17 @@ if __name__ == '__main__':
         "predicted" : classifier.predict(data[stage]["attributes"])
         
     }
-    test_result = evaluateResult(**test_evaluation, prefix="final_test_")
+    test_result = evaluateResult(**test_evaluation, prefix="final_"+stage+"_")
+    logValues(run, test_result, verbose=True)
+
+    print("#### VALIDATION SET")
+    stage = "validation"
+    test_evaluation = {
+        "labels" : data[stage]["labels"],
+        "predicted" : classifier.predict(data[stage]["attributes"])
+        
+    }
+    test_result = evaluateResult(**test_evaluation, prefix="final_"+stage+"_")
     logValues(run, test_result, verbose=True)
 
     modelName = "forest_"+args.category+"_"+args.labels+"_train"+str(round(args.train_share*100))+"_test"+str(round(args.test_share*100))

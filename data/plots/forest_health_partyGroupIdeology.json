@@ -1,0 +1,48 @@
+{
+    "accuracy": {
+        "train": {
+            "final_train_accuracy": 0.18640158581484378
+        },
+        "test": {
+            "final_test_accuracy": 0.08493200843548644
+        },
+        "validation": {
+            "final_validation_accuracy": 0.11135810413810471
+        }
+    },
+    "shares": {
+        "train": {
+            "share_train": 0.8
+        },
+        "test": {
+            "share_test": 0.1
+        },
+        "validation": {}
+    },
+    "dates": {
+        "train": {
+            "start": {
+                "date_train_start": "2018.01.15"
+            },
+            "end": {
+                "date_train_end": "2020.11.12"
+            }
+        },
+        "test": {
+            "start": {
+                "date_test_start": "2020.11.12"
+            },
+            "end": {
+                "date_test_end": "2021.01.19"
+            }
+        },
+        "validation": {
+            "start": {
+                "date_validation_start": "2021.01.19"
+            },
+            "end": {
+                "date_validation_end": "2021.02.10"
+            }
+        }
+    }
+}
