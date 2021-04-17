@@ -23,10 +23,10 @@
     },
     "shares": {
         "train": {
-            "share_test": 0.1
+            "share_train": 0.8
         },
         "test": {
-            "share_train": 0.8
+            "share_test": 0.1
         }
     },
     "dates": {

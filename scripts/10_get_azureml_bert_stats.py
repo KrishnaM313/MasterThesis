@@ -43,11 +43,18 @@ def addPlot(prefix,stage,metric, run, ax,verbose=False,subplotID=0):
             #print(range(1,bestRunMetrics+1))
             print("Indices: {}".format([*range(1,len(bestRunMetrics)+1)]))
 
+        if metric == "avg_loss":
+            metricName = "Average Loss"
+        else:
+            metricName = metric.capitalize()
+        
+
         df = pd.DataFrame({
             prefix+stage+"_"+metric : bestRunMetrics,
             xlabel : [*range(1,len(bestRunMetrics)+1)]
         })
-        ax.plot(df[xlabel], df[prefix+stage+"_"+metric], label=stage+"_"+metric)
+        ax.plot(df[xlabel], df[prefix+stage+"_"+metric], label="{} {}".format(stage.capitalize(), metricName))
+        
         plt.sca(ax)
         plt.xticks([*range(1,len(bestRunMetrics)+1)])
         ax.legend()
@@ -103,8 +110,8 @@ def getMetricsFromRun(run:Run,activeValidation=False):
             "test" : run.get_metrics("final_test_avg_loss"),
         },
         "shares" : {
-            "train" : run.get_metrics("share_test"),
-            "test" : run.get_metrics("share_train")
+            "train" : run.get_metrics("share_train"),
+            "test" : run.get_metrics("share_test")
         }   
     }
     result["dates"] = {}
