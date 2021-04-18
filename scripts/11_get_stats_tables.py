@@ -15,14 +15,79 @@ if __name__ == '__main__':
     categories = ["climate","health"]
     stages = ["train","test","validation"]
 
+
+
+    dictPath = os.path.join(dataPath,"dictionaries")
+
+    filePath = os.path.join(dictPath, "keywords.json")
+
+    
+
+    keywords = loadJSON(filePath)
+
+    header = [categories[0],categories[1]]
+    length = max(len(keywords[categories[0]]),len(keywords[categories[1]]))
+
+    table = []
+    for i in range(length):
+        row = []
+        for category in categories:
+            if i < len(keywords[category]):
+                row.append(keywords[category][i])
+            else:
+                row.append("")
+        table.append(row)
+
+
+    filePath=os.path.join(statsPath,"keyword_dictionaries")
+    saveJSON([header,table],filePath+".json")
+    writeTable("Keyword Dictionaries",header,table,dumpFilePath=filePath+".tex")
+    print(table)
+    exit()
+
+
+
     model = models[0]
     label = labels[0]
     category = categories[0]
     stage = stages[0]
 
+    forest = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("forest",category,label)))
+    bert = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("training",category,label)))
+
+    table = []
+    header = ["Model","Training","Testing","Validation"]
+
+    row = [
+        "RandomForest"
+    ]
+    for stage in stages:
+        row.append(round(forest["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
+    table.append(row)
+
+    row = [
+        "fine-tuned BERT"
+    ]
+    for stage in stages:
+        row.append(round(bert["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
+    table.append(row)
+
+    filePath=os.path.join(statsPath,"model_accuracy_comparison")
+    saveJSON([header,table],filePath+".json")
+    writeTable("Model Accuracy",header,table,dumpFilePath=filePath+".tex")
+    print(table)
+
+
+
+
+
+    model = models[0]
+    label = labels[0]
+    category = categories[0]
+
     result = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format(model,category,label)))
 
-    header = ["stage", "start","end","percentage"]
+    header = ["stage", "start","end","share"]
 
     result["shares"]["validation"] = {
         "share_validation" : 1 - result["shares"]["train"]["share_train"] - result["shares"]["test"]["share_test"]
