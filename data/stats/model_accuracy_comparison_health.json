@@ -1,0 +1,1 @@
+[["Model", "Training", "Testing", "Validation"], [["RandomForest", 0.19, 0.08, 0.11], ["fine-tuned BERT", 0.57, 0.44, 0.4]]]

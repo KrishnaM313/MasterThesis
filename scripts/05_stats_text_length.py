@@ -60,10 +60,37 @@ if __name__ == '__main__':
     count = 0
     result = {}
     
+    categories = ["climate","health"]
 
+    occurance = {
+        categories[0] : 0,
+        categories[1] : 0
+    }
+
+    for filePath in filePaths:
+        speeches = loadJSON(filePath)
+        for speech in speeches:
+            
+            keywordAnalysis = speech["keywordAnalysis"]
+
+            for category in categories:
+                if(sum(keywordAnalysis[category].values())>0):
+                    occurance[category] += 1
+    
+    header = [categories[0].capitalize(), categories[1].capitalize()]
+    value_matrix = [
+        occurance[categories[0]],
+        occurance[categories[1]]
+    ]
+
+    table = writeTable("Amount of speeches for topics",header, value_matrix,outputFile)
+    print(occurance)
+
+            
+    
     #countInSpeech("word", filePaths, plotsDir)
     #countInSpeech("character", filePaths, plotsDir)
-    countInSpeech("word", filePaths, plotsDir, 2018,2021, small=True, showPlot=False, title=False)
+    countInSpeech("word", filePaths, plotsDir, 2018,2021, small=True, showPlot=False)
     #countInSpeech("character", filePaths, plotsDir, 2018,2021, appendix=False)
 
 

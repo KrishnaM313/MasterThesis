@@ -43,39 +43,40 @@ if __name__ == '__main__':
     saveJSON([header,table],filePath+".json")
     writeTable("Keyword Dictionaries",header,table,dumpFilePath=filePath+".tex")
     print(table)
-    exit()
+
 
 
 
     model = models[0]
     label = labels[0]
-    category = categories[0]
     stage = stages[0]
 
-    forest = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("forest",category,label)))
-    bert = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("training",category,label)))
+    for category in categories:
 
-    table = []
-    header = ["Model","Training","Testing","Validation"]
+        forest = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("forest",category,label)))
+        bert = loadJSON(os.path.join(plotsPath,"{}_{}_{}.json".format("training",category,label)))
 
-    row = [
-        "RandomForest"
-    ]
-    for stage in stages:
-        row.append(round(forest["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
-    table.append(row)
+        table = []
+        header = ["Model","Training","Testing","Validation"]
 
-    row = [
-        "fine-tuned BERT"
-    ]
-    for stage in stages:
-        row.append(round(bert["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
-    table.append(row)
+        row = [
+            "RandomForest"
+        ]
+        for stage in stages:
+            row.append(round(forest["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
+        table.append(row)
 
-    filePath=os.path.join(statsPath,"model_accuracy_comparison")
-    saveJSON([header,table],filePath+".json")
-    writeTable("Model Accuracy",header,table,dumpFilePath=filePath+".tex")
-    print(table)
+        row = [
+            "fine-tuned BERT"
+        ]
+        for stage in stages:
+            row.append(round(bert["accuracy"][stage]["final_{}_accuracy".format(stage)],2))
+        table.append(row)
+
+        filePath=os.path.join(statsPath,"model_accuracy_comparison_"+category)
+        saveJSON([header,table],filePath+".json")
+        writeTable("Model Accuracy "+category.capitalize(),header,table,dumpFilePath=filePath+".tex")
+        print(table)
 
 
 

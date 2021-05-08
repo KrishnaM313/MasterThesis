@@ -180,7 +180,7 @@ def updateDataQualityResponse(data: dict, response: dict, key: str) -> dict:
         response[key + "Missing"] = 1
     return response
 
-def countInSpeech(category: str, filePaths: list, plotsDir: str, startYear=None, endYear=None, small=False, showPlot=False, title=True):
+def countInSpeech(category: str, filePaths: list, plotsDir: str, startYear=None, endYear=None, small=False, showPlot=False, title=None):
     cnt = Counter()
     for filePath in tqdm(filePaths):
         if startYear is not None:

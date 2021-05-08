@@ -75,6 +75,13 @@ def getPartyIdeologyAssociations():
         "Non-Inscrits": ["NI"]
     }
 
+def getPartyIdeologyAssociationsList():
+    assocList = ["na"]
+    assoc = getPartyIdeologyAssociations()
+    for ideology in assoc:
+        assocList.append(ideology)
+    return assocList
+
 def getPositionParty():
     return {
         "left" : ["GUE/NGL", "The Left", "S&D", "Verts/ALE"],

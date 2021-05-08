@@ -32,11 +32,13 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
 
     plt.clf()
 
-    groups['sum'].plot(stacked=True)
+    groups['sum'].plot()
     #plt.legend(bbox_to_anchor=(1,1), loc="upper left")
     #plt.legend(loc=(1.04,0))
     plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
                 mode="expand", borderaxespad=0, ncol=2)
+    
+    plt.ylabel("count")
 
     if title:
         plt.title(category)
@@ -71,7 +73,7 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     
     return plt
 
-def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None, small=False):
+def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None, small=False, title=None):
     plt.clf()
 
 
@@ -100,10 +102,11 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
     # plt.axvline(x=percentile95, color="green", label="mean")
     # plt.axvline(x=percentile95, color="yellow", label="median")
 
-    title = "Speeches "+str.title(category)+" Count"
-    if startYear is not None:
-        title = title + " " + str(startYear) + "-" +  str(endYear)
-    plt.title(title)
+    if title is not None:
+        title = "Speeches "+str.title(category)+" Count"
+        if startYear is not None:
+            title = title + " " + str(startYear) + "-" +  str(endYear)
+        plt.title(title)
     plt.legend()
 
     if showPlot is True:

@@ -5,7 +5,7 @@ from tqdm import tqdm
 from icecream import ic
 from tools_logging import logValue
 from typing import List, Union
-from tools_parties import getPartyIdeologyAssociations
+from tools_parties import getPartyIdeologyAssociations, getPartyIdeologyAssociationsList
 
 
 def evaluateResult(
@@ -48,7 +48,8 @@ def evaluateResult(
         }
     #if target_names is not None:
     #ic(getPartyIdeologyAssociations().keys())
-    #print(classification_report(labels, predicted))
+    print("{}_classification_report".format(prefix))
+    print(classification_report(labels, predicted, target_names=getPartyIdeologyAssociationsList()))
         #prefix+"f1_score": f1_score(labels, predicted, average="micro")
         #prefix+"accuracy_score": accuracy_score(labels, predicted),
 
