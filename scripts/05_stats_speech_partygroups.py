@@ -33,8 +33,12 @@ if __name__ == '__main__':
         df.set_index("date", inplace=True)
         df.sort_index(inplace=True)
 
-        for key in ["fixedPoliticalGroup","politicalGroupIdeology"]:
-            plotGraph(df.copy(), category, key, plotsDir, 
-            startYear=2018, dropNA=False, verbose=True, title=False)      
-        
+        # Shorten Conservative democrats and conservatives category to fit plot
+        df['politicalGroupIdeology'] = df['politicalGroupIdeology'].str.replace('Christian democrats and conservatives','Christian democ. and cons.')
 
+        # Drop NA rows
+        df = df.loc[df['politicalGroupIdeology'] != "na"]
+
+        for key in ["fixedPoliticalGroup","politicalGroupIdeology"]:
+            plotGraph(df.copy(), category, key, plotsDir,
+            startYear=2018, dropNA=False, verbose=True, title=False)
