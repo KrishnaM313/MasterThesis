@@ -24,4 +24,3 @@ def writeTable(name, headers, value_matrix, dumpFilePath=None):
     else:
         writer.dump(dumpFilePath)
         writer.write_table()
-

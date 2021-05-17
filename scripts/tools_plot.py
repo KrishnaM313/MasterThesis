@@ -1,17 +1,17 @@
-import pandas as pd
 import datetime
-import matplotlib.pyplot as plt
 import os
-import numpy as np
-import matplotlib.dates as dates
 from collections import Counter
+
 import matplotlib.pyplot as plt
-from tools_data import saveJSON
+import numpy as np
+import pandas as pd
+
 from tools_counter import getCounterPercentile
+from tools_data import saveJSON
 
 
-def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000,endYear=2050, dropNA=False, title=True) -> plt:
-    data = df[["sum",dataKey]]
+def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPath=None, verbose=False, startYear=2000, endYear=2050, dropNA=False, title=True) -> plt:
+    data = df[["sum", dataKey]]
 
     start = data.index.searchsorted(datetime.datetime(startYear, 1, 1))
     end = data.index.searchsorted(datetime.datetime(endYear, 12, 31))
@@ -23,64 +23,37 @@ def plotGraph(df: pd.DataFrame, category: str, dataKey: str, saveFigDirectoryPat
     groups = data.groupby(dataKey)
 
     overview = groups[dataKey].agg("count")
-    
+
     print(overview)
     if saveFigDirectoryPath is not None:
-        overviewFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.json".format(category=category, dataKey=dataKey))
+        overviewFilePath = os.path.join(saveFigDirectoryPath, "{category}_{dataKey}.json".format(
+            category=category, dataKey=dataKey))
         overview["total"] = overview.values.sum()
         overview.to_json(overviewFilePath)
 
     plt.clf()
 
     groups['sum'].plot()
-    #plt.legend(bbox_to_anchor=(1,1), loc="upper left")
-    #plt.legend(loc=(1.04,0))
-    plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
-                mode="expand", borderaxespad=0, ncol=2)
-    
+    plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+               mode="expand", borderaxespad=0, ncol=2)
+
     plt.ylabel("count")
 
     if title:
         plt.title(category)
-    #plt.tight_layout()
-
-
-    # print(data.head())
-    # exit()
-    # for memberEntries in groups:
-    #     print(memberEntries[["date"]])
-    #     x = dates.date2num(memberEntries[["date"]])
-    #     y = memberEntries[["sum"]]
-
-    #     z = np.polyfit(x, y, 1)
-    #     p = np.poly1d(z)
-    #     plt.plot(x,p(x),"r--")
-
-    # data = data.groupby("politicalGroup")
-    # print(data.head())
-
-    # for i, (k, g) in enumerate(data):
-    #     plt.plot_date(g['sum'].index, g['sum'], linestyle='None', marker='o', label=k)
-
-    # plt.legend()
-    #plt.plot(data)
-    #df[['climate change','global warming']].sum().plot.bar()
-    #print(df.head())
     plt.subplots_adjust(top=0.75)
     if saveFigDirectoryPath is not None:
-        imgFilePath = os.path.join(saveFigDirectoryPath,"{category}_{dataKey}.pdf".format(category=category, dataKey=dataKey))
+        imgFilePath = os.path.join(saveFigDirectoryPath, "{category}_{dataKey}.pdf".format(
+            category=category, dataKey=dataKey))
         plt.savefig(imgFilePath)
-    
+
     return plt
+
 
 def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirectoryPath=None, saveJSONFile=True, showPlot=False, startYear=None, endYear=None, small=False, title=None):
     plt.clf()
 
-
     labels, values = zip(*counter.items())
-    
-    
-
 
     indexes = np.arange(len(labels))
     width = 1
@@ -91,21 +64,18 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
 
     align = None
     if small:
-        align="edge"
+        align = "edge"
 
     plt.bar(indexes, values, width, align=align)
 
-    percentile95 = getCounterPercentile(95,counter)
-    plt.axvline(x=percentile95, color="red", label="95 percentile ("+str(percentile95)+")")
-
-    # mean, variance, std_dev = getCounterStats(counter)
-    # plt.axvline(x=percentile95, color="green", label="mean")
-    # plt.axvline(x=percentile95, color="yellow", label="median")
+    percentile95 = getCounterPercentile(95, counter)
+    plt.axvline(x=percentile95, color="red",
+                label="95 percentile ("+str(percentile95)+")")
 
     if title is not None:
         title = "Speeches "+str.title(category)+" Count"
         if startYear is not None:
-            title = title + " " + str(startYear) + "-" +  str(endYear)
+            title = title + " " + str(startYear) + "-" + str(endYear)
         plt.title(title)
     plt.legend()
 
@@ -122,5 +92,5 @@ def plotCounterHistogram(counter: Counter, category="text_length", saveFigDirect
             plt.savefig(plotPath+".svg", bbox_inches='tight')
             plt.savefig(plotPath+".pdf", bbox_inches='tight')
             if saveJSONFile:
-                saveJSON(dict(counter), os.path.join(saveFigDirectoryPath, filename + ".json"))
-
+                saveJSON(dict(counter), os.path.join(
+                    saveFigDirectoryPath, filename + ".json"))

@@ -1,10 +1,10 @@
+import argparse
+import json
+import os
 from datetime import datetime
+
 import numpy as np
 import requests
-import os
-import json
-
-import argparse
 
 parser = argparse.ArgumentParser("download")
 parser.add_argument("--output", type=str, help="output directory")
@@ -18,10 +18,7 @@ if not (args.output is None):
     print("%s created" % args.output)
 
 
-#baseFolder = args.output_extract
-
-#metaFolderPath = args.output_extract
-apiResponseFolderPath = args.output #os.path.join(metaFolderPath, "apiResponse")
+apiResponseFolderPath = args.output
 if not os.path.exists(apiResponseFolderPath):
     os.makedirs(apiResponseFolderPath)
 
@@ -52,12 +49,13 @@ years = np.arange(2003, datetime.now().year, 1).tolist()
 print("Download years: {}".format(years))
 
 for year in years:
-  print("Year {}".format(year),end=' ')
-  response2 = requests.post(url2, data=(data2 % (str(year))),headers={"Content-Type": "application/json"})
-  print(response2)
-  documents=response2.json()["documents"]   
+    print("Year {}".format(year), end=' ')
+    response2 = requests.post(url2, data=(data2 % (str(year))), headers={
+                              "Content-Type": "application/json"})
+    print(response2)
+    documents = response2.json()["documents"]
 
-  filename = os.path.join(apiResponseFolderPath, str(year) + ".json")
+    filename = os.path.join(apiResponseFolderPath, str(year) + ".json")
 
-  with open(filename, 'w') as json_file:
-    json.dump(response2.json(), json_file)
+    with open(filename, 'w') as json_file:
+        json.dump(response2.json(), json_file)

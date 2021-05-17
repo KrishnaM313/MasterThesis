@@ -1,10 +1,10 @@
 
 
-from tools_parties import getIdeologyID, getPartyIdeologyAssociations
-from tools_latex import writeTable
-from tools_data import getBaseDir, saveJSON
 import os
 
+from tools_data import getBaseDir, saveJSON
+from tools_latex import writeTable
+from tools_parties import getPartyIdeologyAssociations
 
 if __name__ == '__main__':
     

@@ -5,6 +5,6 @@ def addPercentage(dictionary: dict):
         percentageDictionary[key] = dictionary[key]
         if key == "total":
             continue
-        percentageDictionary[key+"_percentage"] = dictionary[key]/dictionary["total"]*100
+        percentageDictionary[key+"_percentage"] = dictionary[key] / \
+            dictionary["total"]*100
     return percentageDictionary
-

@@ -1,37 +1,32 @@
 
 import os
-import json
-from xml.etree import ElementTree as ET
 from tools_data import download, saveJSON
 from tools_meps import reorderNames
-import pandas as pd
 
 baseDir = "/home/user/workspaces/MasterThesis/data"
 filename = "mep_list"
-mepInfoDir = os.path.join(baseDir,"meps")
-
+mepInfoDir = os.path.join(baseDir, "meps")
 
 
 if not os.path.exists(mepInfoDir):
-  os.makedirs(mepInfoDir)
+    os.makedirs(mepInfoDir)
 
 
-xlsInfo2014FilePath = os.path.join(mepInfoDir,filename + "_2014" + ".xls")
+xlsInfo2014FilePath = os.path.join(mepInfoDir, filename + "_2014" + ".xls")
 xlsInfo2014Url = "http://www.europarl.europa.eu/RegData/publications/lmeps/1979/0001/EP-PE_LMEPS(1979)0001_XL.xls"
-xlsInfo2014 = download("xls",xlsInfo2014FilePath,xlsInfo2014Url)
+xlsInfo2014 = download("xls", xlsInfo2014FilePath, xlsInfo2014Url)
 xlsInfo2014 = reorderNames(xlsInfo2014)
 
 
-
-xlsInfo2019FilePath = os.path.join(mepInfoDir,filename + "_2019" + ".xls")
+xlsInfo2019FilePath = os.path.join(mepInfoDir, filename + "_2019" + ".xls")
 xlsInfo2019Url = "http://www.europarl.europa.eu/RegData/publications/lmeps/2018/0002/EP-PE_LMEPS(2018)0002_XL.xlsx"
-xlsInfo2019 = download("xls",xlsInfo2019FilePath,xlsInfo2019Url)
+xlsInfo2019 = download("xls", xlsInfo2019FilePath, xlsInfo2019Url)
 xlsInfo2019 = reorderNames(xlsInfo2019)
 
 
-xmlDirectoryFilePath = os.path.join(mepInfoDir,filename + ".xml")
+xmlDirectoryFilePath = os.path.join(mepInfoDir, filename + ".xml")
 xmlDirectoryUrl = "https://www.europarl.europa.eu/meps/en/directory/xml?letter=&leg="
-meps = download("xml",xmlDirectoryFilePath,xmlDirectoryUrl)
+meps = download("xml", xmlDirectoryFilePath, xmlDirectoryUrl)
 
 
 mepsByID = {}
@@ -66,29 +61,12 @@ for mep in meps:
         elif key.tag == "id":
             id = key.text
             entryByID["id"] = id
-        
-        # elif key.tag == "politicalGroup":
-        #     politicalGroup = key.text
-        #     entryByID["politicalGroup"] = politicalGroup
-        # elif key.tag == "country":
-        #     country = key.text
-        #     entryByID["country"] = country
-        # elif key.tag == "nationalPoliticalGroup":
-        #     nationalPoliticalGroup = key.text
-        #     entryByID["nationalPoliticalGroup"] = nationalPoliticalGroup
-
-    # entryByID = {
-    #     "name" : name,
-    #     "politicalGroup" : politicalGroup,
-    #     "country" : country,
-    #     "nationalPoliticalGroup" : nationalPoliticalGroup
-    # }
     mepsByID[id] = entryByID
-
     entryByName = id
     mepsByName[name] = entryByName
 
-print("Found: {found}, Not found: {notfound}".format(found=found,notfound=notfound))
+print("Found: {found}, Not found: {notfound}".format(
+    found=found, notfound=notfound))
 
 mepListFilepathByID = os.path.join(mepInfoDir, filename + "_by_id.json")
 saveJSON(mepsByID, mepListFilepathByID)

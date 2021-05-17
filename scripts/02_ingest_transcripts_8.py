@@ -1,13 +1,12 @@
 import os
 import re
 import json
-import time
 from langdetect import detect
-from tools_data import loadJSON, saveJSON, loadFile
+from tools_data import loadJSON, loadFile
 from tools_language import translateText
 from tqdm import tqdm
 
-baseDir = "/home/user/workspaces/MasterThesis/data" 
+baseDir = "/home/user/workspaces/MasterThesis/data"
 
 htmlDir = os.path.join(baseDir, "html")
 JSONDir = os.path.join(baseDir, "json")
@@ -24,7 +23,7 @@ files.sort(reverse=True)
 globalTranslationProvider = "azure"
 
 
-for n,file in enumerate(tqdm(files)):
+for n, file in enumerate(tqdm(files)):
     if not file.endswith(".html"):
         continue
 
@@ -36,14 +35,14 @@ for n,file in enumerate(tqdm(files)):
 
     print(availableJSONFiles)
 
-
-    JSONFilename = "{year}-{month}-{day}.json".format(year=year,month=month,day=day)
+    JSONFilename = "{year}-{month}-{day}.json".format(
+        year=year, month=month, day=day)
     print(JSONFilename)
-  
+
     reuse = False
     if JSONFilename in availableJSONFiles:
         reuse = True
-        JSONfilePath = os.path.join(JSONDir,JSONFilename)
+        JSONfilePath = os.path.join(JSONDir, JSONFilename)
         existingData = loadJSON(JSONfilePath)
         if len(existingData) == 0:
             reuse = False
@@ -52,25 +51,28 @@ for n,file in enumerate(tqdm(files)):
 
     print(file)
 
-    filePath = os.path.join(htmlDir,file)
+    filePath = os.path.join(htmlDir, file)
     data = loadFile(filePath)
 
     #p = re.compile('<table width="100%" border="0" cellpadding="5" cellspacing="0">(.+?)<\/table><\/td><\/tr><\/table>/mgs', re.DOTALL)
     # Regex search for finding speeches
-    pSpeech = re.compile(r'<img alt="MPphoto".+?doc_subtitle_level1_bis">(.+?)</table></td></tr></table>', flags=re.DOTALL)
+    pSpeech = re.compile(
+        r'<img alt="MPphoto".+?doc_subtitle_level1_bis">(.+?)</table></td></tr></table>', flags=re.DOTALL)
 
     # Regex search for finding Name of speaker
-    pName = re.compile(r'<span class="doc_subtitle_level1_bis"><span class="bold">(.+?)</span></span>', flags=re.DOTALL)
+    pName = re.compile(
+        r'<span class="doc_subtitle_level1_bis"><span class="bold">(.+?)</span></span>', flags=re.DOTALL)
 
     # Regex for finding MEP id of speaker
     pMEPId = re.compile(r'/mepphoto/(\d+?).jpg')
 
-    pSpeechText = re.compile(r'<span class="bold">.+?</span>(.+?)</p></td><td width="16">',flags=re.DOTALL)
+    pSpeechText = re.compile(
+        r'<span class="bold">.+?</span>(.+?)</p></td><td width="16">', flags=re.DOTALL)
 
     # Regex to remove HTML tags from speech
     pRemoveHTML = re.compile('<.*?>', re.MULTILINE)
     pRemoveLinebreak = re.compile(r'\n', re.MULTILINE)
-    
+
     speeches = pSpeech.finditer(data)
 
     count = 0
@@ -83,31 +85,27 @@ for n,file in enumerate(tqdm(files)):
     for match in speeches:
 
         speech = data[match.start():match.end()]
-        
+
         nameSearch = pName.search(speech)
         if nameSearch is None:
             name = "n/a"
         else:
             name = nameSearch.group(1)
-            name = name.replace(",","")
-            name = name.replace("  "," ")
+            name = name.replace(",", "")
+            name = name.replace("  ", " ")
             name = name.strip()
-            #print(name)
-
 
         MEPIdSearch = pMEPId.search(speech)
         if MEPIdSearch is None:
             MEPId = "n/a"
         else:
             MEPId = MEPIdSearch.group(1)
-        #print(MEPId)
-
 
         speechTextSearch = pSpeechText.search(speech)
         if speechTextSearch is None:
             continue
         speechTextHTML = speechTextSearch.group(1)
-        speechText = str(re.sub(pRemoveHTML, '',speechTextHTML))
+        speechText = str(re.sub(pRemoveHTML, '', speechTextHTML))
 
         # Remove line break command "\n" in text
         speechText = speechText.replace("\n", " ")
@@ -117,15 +115,14 @@ for n,file in enumerate(tqdm(files)):
         except:
             continue
 
-    
         if (count+1) > len(existingData):
             reuse = False
 
-        print("{n}/{ntotal} : {year}-{month}-{day} #{count}: {mepid} - {language} - {name}".format(n=n,ntotal=len(files),year=year,month=month,day=day,count=count,mepid=MEPId,language=language,name=name))
+        print("{n}/{ntotal} : {year}-{month}-{day} #{count}: {mepid} - {language} - {name}".format(n=n,
+              ntotal=len(files), year=year, month=month, day=day, count=count, mepid=MEPId, language=language, name=name))
 
         texts += 1
         if reuse:
-            #print("reuse existing JSON")
             # JSON file already exists
             if existingData[count]["text"] == "":
                 print("text is empty. translate again")
@@ -138,17 +135,17 @@ for n,file in enumerate(tqdm(files)):
                     translationProvider = ""
                 else:
                     textstranslated += 1
-                    text = translateText(speechText,language,"en", globalTranslationProvider)
+                    text = translateText(
+                        speechText, language, "en", globalTranslationProvider)
                     translationProvider = globalTranslationProvider
             else:
-                #print("translation already exists")
                 text = existingData[count]["text"]
                 if "translation_provider" not in existingData[count] or existingData[count]["translation_provider"] == "":
                     translationProvider = "azure"
                 else:
                     translationProvider = existingData[count]["translation_provider"]
         else:
-            
+
             # no JSON file exists for this day
             if language == "en":
                 print("using english original")
@@ -160,27 +157,27 @@ for n,file in enumerate(tqdm(files)):
                 translationProvider = ""
             else:
                 print("translating ...")
-                text = translateText(speechText,language,"en", globalTranslationProvider)
+                text = translateText(speechText, language,
+                                     "en", globalTranslationProvider)
                 translationProvider = globalTranslationProvider
-            
-        
-        
+
         speechObject = {
-            "id" : count,
-            "date" : "{year}-{month}-{day}.json".format(year=year,month=month,day=day),
-            "name" : name,
-            "mepid" : MEPId,
-            "text" : text,
-            "language" : "en",
-            "original_language" : language,
-            "translation_provider" : translationProvider
+            "id": count,
+            "date": "{year}-{month}-{day}.json".format(year=year, month=month, day=day),
+            "name": name,
+            "mepid": MEPId,
+            "text": text,
+            "language": "en",
+            "original_language": language,
+            "translation_provider": translationProvider
         }
 
         speechObjects.append(speechObject)
 
         if count % 50 == 0:
             JSONFilepath = os.path.join(JSONDir, JSONFilename)
-            print("Write JSON file to {filepath}".format(filepath=JSONFilepath))
+            print("Write JSON file to {filepath}".format(
+                filepath=JSONFilepath))
             with open(JSONFilepath, 'w') as outfile:
                 dataEncoded = json.dumps(speechObjects, ensure_ascii=False)
                 outfile.write(str(dataEncoded))

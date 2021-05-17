@@ -1,34 +1,18 @@
 
-from tools_analysis import countKeywords
-from transformers import BertTokenizer, BertModel, BertForSequenceClassification, AdamW
-from tools_data import getBaseDir, loadJSON
-from model_finetuned import FintunedModel
-import os
-import torch
-import numpy as np
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler, DataLoader, TensorDataset, random_split
-from tools_dataset import getDataSplitSizes, BertDataset, getDataSplitIndices, splitDateList
-from tqdm import tqdm
-from datasets import Dataset
-import mlflow
-from azureml.core import Run
 import argparse
-import torch.nn as nn
-from sklearn.metrics import classification_report
-import json
-from tools_logging import logValues, logConfusionMatrix, printModelParameters
-from tools_data import getFileList, convertFileListToDateList
-# from pytorch_lightning.loggers import MLFlowLogger
-from pandas import DataFrame
-import numpy as np
+import os
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score, f1_score
-from tools_parties import getIdeologyID
-from tools_nn import evaluateResult
-from icecream import ic
 import joblib
+import numpy as np
+import torch
+from azureml.core import Run
+from icecream import ic
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+
+from tools_dataset import BertDataset, getDataSplitIndices
+from tools_logging import logValues
+from tools_nn import evaluateResult
 
 if __name__ == '__main__':
 
@@ -74,13 +58,13 @@ if __name__ == '__main__':
         help="which tensor data set to use as labels: can be leftRightPosition or partyGroupIdeology",
     )
 
-    #default=0.80,
+    # default=0.80,
     parser.add_argument(
         "--train_share",
         type=float
     )
-    
-    #default=0.15,
+
+    # default=0.15,
     parser.add_argument(
         "--test_share",
         type=float
@@ -92,16 +76,20 @@ if __name__ == '__main__':
 
     postfix = "_"+args.category+"_"+str(args.threshold)+".pt"
     # Load Tensors
-    tokens: torch.Tensor = torch.load(os.path.join(args.data_path, "tokens"+postfix))
+    tokens: torch.Tensor = torch.load(
+        os.path.join(args.data_path, "tokens"+postfix))
 
     if args.labels == "leftRightPosition":
-        labels: torch.Tensor = torch.load(os.path.join(args.data_path, "leftRightLabels"+postfix))
+        labels: torch.Tensor = torch.load(os.path.join(
+            args.data_path, "leftRightLabels"+postfix))
     elif args.labels == "partyGroupIdeology":
-        labels: torch.Tensor = torch.load(os.path.join(args.data_path, "labels"+postfix))
-    
+        labels: torch.Tensor = torch.load(
+            os.path.join(args.data_path, "labels"+postfix))
 
-    dates: torch.Tensor = torch.load(os.path.join(args.data_path, "dates"+postfix))
-    keywordAnalysis_list: torch.Tensor = torch.load(os.path.join(args.data_path, "keywordAnalysis"+postfix))
+    dates: torch.Tensor = torch.load(
+        os.path.join(args.data_path, "dates"+postfix))
+    keywordAnalysis_list: torch.Tensor = torch.load(
+        os.path.join(args.data_path, "keywordAnalysis"+postfix))
 
     n = len(keywordAnalysis_list)
     m = len(keywordAnalysis_list[0])
@@ -109,7 +97,7 @@ if __name__ == '__main__':
     keywordAnalysis = np.empty([n, m], dtype=int)
 
     for i, entry in enumerate(keywordAnalysis_list):
-        keywordAnalysis[i,:] = np.fromiter(entry.values(), dtype=int)
+        keywordAnalysis[i, :] = np.fromiter(entry.values(), dtype=int)
 
     # Create Dataset
     dataset = BertDataset(tokens, labels)
@@ -125,34 +113,35 @@ if __name__ == '__main__':
     # validation: 2020.01.13 - 2021.02.08
 
     splitIndices = getDataSplitIndices(
-        dataset, 
-        dates=dates, 
-        run=run, 
-        trainPercentage=args.train_share, 
+        dataset,
+        dates=dates,
+        run=run,
+        trainPercentage=args.train_share,
         testPercentage=args.test_share)
 
     data = {
-        "train" : {
-            "attributes" : keywordAnalysis[splitIndices['train']],
-            "labels" : labels[splitIndices['train']]
+        "train": {
+            "attributes": keywordAnalysis[splitIndices['train']],
+            "labels": labels[splitIndices['train']]
         },
-        "test" : {
-            "attributes" : keywordAnalysis[splitIndices['test']],
-            "labels" : labels[splitIndices['test']]
+        "test": {
+            "attributes": keywordAnalysis[splitIndices['test']],
+            "labels": labels[splitIndices['test']]
         },
-        "validation" : {
-            "attributes" : keywordAnalysis[splitIndices['validation']],
-            "labels" : labels[splitIndices['validation']]
+        "validation": {
+            "attributes": keywordAnalysis[splitIndices['validation']],
+            "labels": labels[splitIndices['validation']]
         }
     }
-    
+
     sc = StandardScaler()
 
     dictionary = args.category
 
     data["train"]["attributes"] = sc.fit_transform(data["train"]["attributes"])
     data["test"]["attributes"] = sc.transform(data["test"]["attributes"])
-    data["validation"]["attributes"] = sc.transform(data["validation"]["attributes"])
+    data["validation"]["attributes"] = sc.transform(
+        data["validation"]["attributes"])
 
     classifier = RandomForestClassifier(n_estimators=20, random_state=0)
     classifier.fit(data["train"]["attributes"], data["train"]["labels"])
@@ -160,18 +149,19 @@ if __name__ == '__main__':
     print("#### TRAIN SET")
     stage = "train"
     train_evaluation = {
-        "labels" : data[stage]["labels"],
-        "predicted" : classifier.predict(data[stage]["attributes"])
+        "labels": data[stage]["labels"],
+        "predicted": classifier.predict(data[stage]["attributes"])
     }
-    train_result = evaluateResult(**train_evaluation, prefix="final_"+stage+"_")
+    train_result = evaluateResult(
+        **train_evaluation, prefix="final_"+stage+"_")
     logValues(run, train_result, verbose=True)
 
     print("#### TESTING SET")
     stage = "test"
     test_evaluation = {
-        "labels" : data[stage]["labels"],
-        "predicted" : classifier.predict(data[stage]["attributes"])
-        
+        "labels": data[stage]["labels"],
+        "predicted": classifier.predict(data[stage]["attributes"])
+
     }
     test_result = evaluateResult(**test_evaluation, prefix="final_"+stage+"_")
     logValues(run, test_result, verbose=True)
@@ -179,16 +169,18 @@ if __name__ == '__main__':
     print("#### VALIDATION SET")
     stage = "validation"
     test_evaluation = {
-        "labels" : data[stage]["labels"],
-        "predicted" : classifier.predict(data[stage]["attributes"])
-        
+        "labels": data[stage]["labels"],
+        "predicted": classifier.predict(data[stage]["attributes"])
+
     }
     test_result = evaluateResult(**test_evaluation, prefix="final_"+stage+"_")
     logValues(run, test_result, verbose=True)
 
-    modelName = "forest_"+args.category+"_"+args.labels+"_train"+str(round(args.train_share*100))+"_test"+str(round(args.test_share*100))
-    
-    modelPath = "./"+modelName+".pkl" #args.output_dir
+    modelName = "forest_"+args.category+"_"+args.labels+"_train" + \
+        str(round(args.train_share*100)) + \
+        "_test"+str(round(args.test_share*100))
+
+    modelPath = "./"+modelName+".pkl"  # args.output_dir
 
     joblib.dump(classifier, modelPath)
     run.upload_file("outputs/"+modelName+".pkl", modelPath)

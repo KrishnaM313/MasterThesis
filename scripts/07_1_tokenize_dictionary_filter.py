@@ -1,10 +1,12 @@
-from transformers import BertTokenizer, BertModel, BertForSequenceClassification
-from tools_data import getBaseDir, extractDate, extractDateValues, loadJSON, getDateString, getDateInteger
-from tools_parties import getIdeologyID, getPartyIdeologyPosition
-from tqdm import tqdm
 import os
+
 import torch
 from icecream import ic
+from tqdm import tqdm
+from transformers import BertTokenizer
+
+from tools_data import extractDateValues, getBaseDir, getDateInteger, loadJSON
+from tools_parties import getIdeologyID, getPartyIdeologyPosition
 
 if __name__ == '__main__':
 
@@ -37,9 +39,6 @@ if __name__ == '__main__':
     tokenizer = BertTokenizer.from_pretrained(
         'bert-base-uncased')  # bert-large-cased
 
-    #tensorHeight = 25
-    #tensorLength = 20
-    #tensorSize = ic(tensorHeight*tensorLength)#
     tensorSize = 500
 
     categories = ['health', 'climate']
@@ -47,16 +46,15 @@ if __name__ == '__main__':
     # The threshold determines the number of dictionary words that
     # have to be used in a speech for it to be considered a speech
     # about that topic
-    thresholds = [1] #, 2, 3]
+    thresholds = [1]  # , 2, 3]
 
     # Setup dictionary that will contain all relevant speeches
-
 
     # Trying out different thresholds: how many words have to be in the climate dictionary
     # to put this speech in the climate dataset
     for threshold in thresholds:
         print("Creating tensors for threshold %s" % threshold)
-        
+
         for keywordCategory in categories:
             print("Creating tensors for category %s" % keywordCategory)
 
@@ -66,7 +64,6 @@ if __name__ == '__main__':
             keywordAnalysis = []
             leftRightLabels = []
 
-           
             # going through all the json files
             print("Processing %s JSON files" % len(filePaths))
             for filePath in tqdm(filePaths):
@@ -81,53 +78,36 @@ if __name__ == '__main__':
 
                 for speech in JSONfile:
                     # Check for each category of dictionary
-                        dictionaryWordCount = sum(speech['keywordAnalysis'][keywordCategory].values())
-                        if dictionaryWordCount >= threshold:
-                            keywordAnalysis.append(speech['keywordAnalysis'][keywordCategory])
-                            dates.append(getDateInteger(year, month, day))
-                            #dates[keywordCategory] += [
-                            #    getDateInteger(year, month, day)]
-                            texts.append(speech["text"])
-                            #texts[keywordCategory] += [speech["text"]]
-                            #ic(getPartyIdeologyPosition(speech["partyIdeology"]))
-                            positionID, _ = getPartyIdeologyPosition(speech["partyIdeology"])
-                            leftRightLabels.append(positionID)
-                            labels.append(getIdeologyID(speech["partyIdeology"]))
-                            #exit()
-                            
-                            #leftRight.append()
-                            #labels[keywordCategory] += [
-                            #    getIdeologyID(speech["partyIdeology"])]
-                        #print(dictionaryWordCount)
-
+                    dictionaryWordCount = sum(
+                        speech['keywordAnalysis'][keywordCategory].values())
+                    if dictionaryWordCount >= threshold:
+                        keywordAnalysis.append(
+                            speech['keywordAnalysis'][keywordCategory])
+                        dates.append(getDateInteger(year, month, day))
+                        texts.append(speech["text"])
+                        positionID, _ = getPartyIdeologyPosition(
+                            speech["partyIdeology"])
+                        leftRightLabels.append(positionID)
+                        labels.append(getIdeologyID(speech["partyIdeology"]))
 
             print("Tokenizing to create tensors")
 
             tokens = tokenizer.batch_encode_plus(
-                texts, 
-                verbose=True, 
-                padding="max_length", 
-                max_length=tensorSize, 
-                truncation=True,  
+                texts,
+                verbose=True,
+                padding="max_length",
+                max_length=tensorSize,
+                truncation=True,
                 return_tensors='pt')
 
             tokensIdeology = tokens
-            #tokensIdeology['labels'] = torch.tensor(
-            #    labels, dtype=torch.int32)
-
-            #tokensLeftRight = tokens
-            #tokensLeftRight['labels'] = torch.tensor(
-            #    leftRightLabels, dtype=torch.int32)
-
 
             postfix = "_"+keywordCategory+"_"+str(threshold)+".pt"
 
             torch.save(tokensIdeology, os.path.join(embeddingsDir,
-                                            "tokens"+postfix))
-            #torch.save(leftRightLabels, os.path.join(embeddingsDir,
-            #                                "leftRightLabels"+postfix))
+                                                    "tokens"+postfix))
             torch.save(keywordAnalysis, os.path.join(embeddingsDir,
-                                            "keywordAnalysis"+postfix))
+                                                     "keywordAnalysis"+postfix))
             torch.save(torch.tensor(dates), os.path.join(
                 embeddingsDir, "dates"+postfix))
             torch.save(torch.tensor(labels), os.path.join(

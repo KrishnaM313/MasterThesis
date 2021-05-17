@@ -1,24 +1,8 @@
 """This is the script to define the settings for the convolutional neural network using the 2D approach.
 """
 
-# Loading the required packages
-import torch
-import numpy as np
-from torch.utils.data.dataset import TensorDataset
-from torch.utils.data.sampler import RandomSampler
-from torch.utils.data.dataloader import DataLoader
-from torch.nn.modules.container import Sequential
-from torch.nn.modules.conv import Conv2d
-from torch.nn.modules.batchnorm import BatchNorm2d
-from torch.nn.modules.activation import ReLU
-from torch.nn.modules.pooling import MaxPool2d
-from torch.nn.modules.linear import Linear
-from torch.nn.modules.loss import CrossEntropyLoss
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torchviz import make_dot, make_dot_from_trace
-import json
+
 
 class CNN_2d_experiment(nn.Module):
     """This class sets up an experiment for a 2D CNN with two convolutional layers.
